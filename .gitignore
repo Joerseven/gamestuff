@@ -2,6 +2,6 @@ CMakeFiles
 out
 x64
 .vs
-.cmake
 .idea
 .ninja_log
+/.cmake

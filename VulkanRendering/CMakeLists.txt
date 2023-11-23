@@ -99,7 +99,7 @@ target_include_directories (${PROJECT_NAME}
 )	
 
 target_include_directories (${PROJECT_NAME} 
-    PUBLIC ${Vulkan_INCLUDE_DIR}
+    PUBLIC ${VULKAN_INCLUDE_DIR}
     PUBLIC ${CMAKE_SOURCE_DIR}/NCLCoreClasses
 )	
 
@@ -107,4 +107,4 @@ target_include_directories (${PROJECT_NAME}
 # Dependencies
 ################################################################################
 target_link_libraries(${PROJECT_NAME} PUBLIC "${ADDITIONAL_LIBRARY_DEPENDENCIES}")
-target_link_libraries(${PROJECT_NAME} PRIVATE ${Vulkan_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${VULKAN_LIBRARIES})
