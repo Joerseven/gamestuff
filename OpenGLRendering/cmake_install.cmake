@@ -1,4 +1,4 @@
-# Install script for directory: H:/Downloads/gamestuff/OpenGLRendering
+# Install script for directory: C:/workplz/gamestuff/OpenGLRendering
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

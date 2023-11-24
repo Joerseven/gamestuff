@@ -273,13 +273,6 @@ bool CollisionDetection::AABBIntersection(const AABBVolume& volumeA, const Trans
             }
         }
 
-        for (int i = 0; i < 6; i++) {
-            if (distances[i] < penetration) {
-                penetration = distances[i];
-                bestAxis = faces[i];
-            }
-        }
-
         collisionInfo.AddContactPoint(Vector3(), Vector3(), bestAxis, penetration);
         return true;
     }

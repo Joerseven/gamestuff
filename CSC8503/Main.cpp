@@ -100,7 +100,7 @@ hide or show the
 
 */
 int main() {
-//    TestNetworking();
+    TestNetworking();
 	Window*w = Window::CreateGameWindow("CSC8503 Game technology!", 1920, 1080);
 
 	if (!w->HasInitialised()) {

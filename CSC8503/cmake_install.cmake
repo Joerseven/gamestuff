@@ -1,4 +1,4 @@
-# Install script for directory: H:/Downloads/gamestuff/CSC8503
+# Install script for directory: C:/workplz/gamestuff/CSC8503
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
