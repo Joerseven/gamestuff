@@ -1,4 +1,4 @@
-# Install script for directory: C:/workplz/gamestuff/OpenGLRendering
+# Install script for directory: C:/Users/jdhyd/Documents/GitHub/TwoEngine/gamestuff/OpenGLRendering
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

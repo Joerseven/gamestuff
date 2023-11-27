@@ -55,6 +55,7 @@ void TutorialGame::InitialiseAssets() {
 	enemyMesh	= renderer->LoadMesh("Keeper.msh");
 	bonusMesh	= renderer->LoadMesh("apple.msh");
 	capsuleMesh = renderer->LoadMesh("capsule.msh");
+    graveStone = renderer->LoadOBJMesh("../../Assets/Meshes/gravestone-bevel.obj");
 
 	basicTex	= renderer->LoadTexture("checkerboard.png");
 	basicShader = renderer->LoadShader("scene.vert", "scene.frag");
@@ -98,6 +99,8 @@ void TutorialGame::UpdateGame(float dt) {
 		world->GetMainCamera().SetYaw(angles.y);
 	}
 
+
+
 	UpdateKeys();
 
 	if (useGravity) {
@@ -132,6 +135,10 @@ void TutorialGame::UpdateGame(float dt) {
 
 	SelectObject();
 	MoveSelectedObject();
+
+    if (testStateObject) {
+        testStateObject->Update(dt);
+    }
 
 	world->UpdateWorld(dt);
 	renderer->Update(dt);
@@ -264,6 +271,7 @@ void TutorialGame::InitWorld() {
 
 	InitGameExamples();
 	InitDefaultFloor();
+    testStateObject = AddStateObjectToWorld(Vector3(0, 10, 0));
 }
 
 /*
@@ -572,6 +580,26 @@ void TutorialGame::BridgeConstraintTest() {
 
     PositionConstraint* constraint = new PositionConstraint(previous, end, maxDistance);
     world->AddConstraint(constraint);
+}
+
+StateGameObject *TutorialGame::AddStateObjectToWorld(const Vector3 &position) {
+    auto apple = new StateGameObject();
+
+    SphereVolume* volume = new SphereVolume(0.5f);
+    apple->SetBoundingVolume((CollisionVolume*)volume);
+    apple->GetTransform()
+            .SetScale(Vector3(40, 40, 40))
+            .SetPosition(position);
+
+    apple->SetRenderObject(new RenderObject(&apple->GetTransform(), graveStone, nullptr, basicShader));
+    apple->SetPhysicsObject(new PhysicsObject(&apple->GetTransform(), apple->GetBoundingVolume()));
+
+    apple->GetPhysicsObject()->SetInverseMass(1.0f);
+    apple->GetPhysicsObject()->InitSphereInertia();
+
+    world->AddGameObject(apple);
+
+    return apple;
 }
 
 

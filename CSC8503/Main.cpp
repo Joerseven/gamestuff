@@ -31,6 +31,38 @@ using namespace CSC8503;
 #include <thread>
 #include <sstream>
 
+void TestStateMachine() {
+    auto testMachine = new StateMachine();
+    int data = 0;
+
+    auto A = new State([&](float dt)->void {
+        std::cout << "I'm state A!" << std::endl;
+        data++;
+    });
+
+    auto B = new State([&](float dt)->void {
+        std::cout << "I'm state B!" << std::endl;
+        data--;
+    });
+
+    auto stateAB = new StateTransition(A, B, [&]()->bool {
+        return data > 10;
+    });
+
+    auto stateBA = new StateTransition(B, A, [&]()->bool {
+        return data < 0;
+    });
+
+    testMachine->AddState(A);
+    testMachine->AddState(B);
+    testMachine->AddTransition(stateAB);
+    testMachine->AddTransition(stateBA);
+
+    for (int i = 0; i < 100; i++) {
+        testMachine->Update(1.0f);
+    }
+}
+
 void TestPathfinding() {
 }
 

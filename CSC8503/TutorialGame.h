@@ -6,7 +6,6 @@
 #include "GameTechVulkanRenderer.h"
 #endif
 #include "PhysicsSystem.h"
-
 #include "StateGameObject.h"
 
 namespace NCL {
@@ -53,6 +52,9 @@ namespace NCL {
 			GameObject* AddEnemyToWorld(const Vector3& position);
 			GameObject* AddBonusToWorld(const Vector3& position);
 
+            StateGameObject* AddStateObjectToWorld(const Vector3& position);
+            StateGameObject* testStateObject;
+
 #ifdef USEVULKAN
 			GameTechVulkanRenderer*	renderer;
 #else
@@ -81,6 +83,7 @@ namespace NCL {
 			Mesh*	charMesh	= nullptr;
 			Mesh*	enemyMesh	= nullptr;
 			Mesh*	bonusMesh	= nullptr;
+            Mesh*   graveStone = nullptr;
 
 			//Coursework Additional functionality	
 			GameObject* lockedObject	= nullptr;

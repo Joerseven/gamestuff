@@ -39,6 +39,7 @@ void StateMachine::Update(float dt) {
 			if (i->second->CanTransition()) {
 				State* newState = i->second->GetDestinationState();
 				activeState = newState;
+                std::cout << "Changing state" << std::endl;
 			}
 		}
 	}

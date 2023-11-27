@@ -10,6 +10,11 @@ using namespace CSC8503;
 
 #define SHADOWSIZE 4096
 
+#define MODELPATH "../../Assets/Meshes/"
+
+#define TINYOBJLOADER_IMPLEMENTATION
+#include "tinyobjloader.h"
+
 Matrix4 biasMatrix = Matrix4::Translation(Vector3(0.5f, 0.5f, 0.5f)) * Matrix4::Scale(Vector3(0.5f, 0.5f, 0.5f));
 
 GameTechRenderer::GameTechRenderer(GameWorld& world) : OGLRenderer(*Window::GetWindow()), gameWorld(world)	{
@@ -303,6 +308,85 @@ Mesh* GameTechRenderer::LoadMesh(const std::string& name) {
 	mesh->SetPrimitiveType(GeometryPrimitive::Triangles);
 	mesh->UploadToGPU();
 	return mesh;
+}
+
+Mesh *GameTechRenderer::LoadOBJMesh(const std::string &name) {
+
+    auto mesh = new OGLMesh();
+    tinyobj::attrib_t attrib;
+    std::vector<tinyobj::shape_t> shapes;
+    std::vector<tinyobj::material_t> materials;
+
+    std::string err;
+
+    bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, name.c_str(), MODELPATH);
+
+    if (!err.empty()) {
+        std::cerr << err << std::endl;
+    }
+
+    if (!ret) {
+        std::cerr << "Unable to load mesh file: " << name << std::endl;
+    }
+
+    const std::vector<tinyobj::index_t>& indices = shapes[0].mesh.indices;
+    const std::vector<int>& material_ids = shapes[0].mesh.material_ids;
+
+    auto vertices = std::vector<Vector3>();
+    auto normals = std::vector<Vector3>();
+    auto colors = std::vector<Vector4>();
+    auto textureCoords = std::vector<Vector2>();
+    auto indi = std::vector<GLuint>();
+
+    for (size_t index = 0; index < material_ids.size(); index++) {
+        Vector3 original[] = {
+                Vector3(attrib.vertices[indices[3 * index].vertex_index * 3],
+                        attrib.vertices[indices[3 * index].vertex_index * 3 + 1],
+                        attrib.vertices[indices[3 * index].vertex_index * 3 + 2]),
+                Vector3(attrib.vertices[indices[3 * index + 1].vertex_index * 3],
+                        attrib.vertices[indices[3 * index + 1].vertex_index * 3 + 1],
+                        attrib.vertices[indices[3 * index + 1].vertex_index * 3 + 2]),
+                Vector3(attrib.vertices[indices[3 * index + 2].vertex_index * 3],
+                        attrib.vertices[indices[3 * index + 2].vertex_index * 3 + 1],
+                        attrib.vertices[indices[3 * index + 2].vertex_index * 3 + 2])
+        };
+
+        vertices.push_back(original[0]);
+        textureCoords.push_back(Vector2(
+                attrib.texcoords[indices[3 * index].texcoord_index * 2],
+                attrib.texcoords[indices[3 * index].texcoord_index * 2 + 1]
+        ));
+        colors.push_back(Vector4(materials[material_ids[index]].diffuse[0],materials[material_ids[index]].diffuse[1],materials[material_ids[index]].diffuse[2], 1.0));
+        indi.push_back(vertices.size() - 1);
+
+        vertices.push_back(original[1]);
+        textureCoords.push_back(Vector2(
+                attrib.texcoords[indices[3 * index + 1].texcoord_index * 2],
+                attrib.texcoords[indices[3 * index + 1].texcoord_index * 2 + 1]
+        ));
+        colors.push_back(Vector4(materials[material_ids[index]].diffuse[0],materials[material_ids[index]].diffuse[1],materials[material_ids[index]].diffuse[2], 1.0));
+        indi.push_back(vertices.size() - 1);
+
+        vertices.push_back(original[2]);
+        textureCoords.push_back(Vector2(
+                attrib.texcoords[indices[3 * index + 2].texcoord_index * 2],
+                attrib.texcoords[indices[3 * index + 2].texcoord_index * 2 + 1]
+        ));
+        colors.push_back(Vector4(materials[material_ids[index]].diffuse[0],materials[material_ids[index]].diffuse[1],materials[material_ids[index]].diffuse[2], 1.0));
+        indi.push_back(vertices.size() - 1);
+    }
+
+    mesh->SetVertexPositions(vertices);
+    mesh->SetVertexTextureCoords(textureCoords);
+    mesh->SetVertexIndices(indi);
+    mesh->SetVertexColours(colors);
+
+    mesh->SetPrimitiveType(GeometryPrimitive::Triangles);
+
+    mesh->RecalculateNormals();
+    mesh->UploadToGPU();
+
+    return mesh;
 }
 
 void GameTechRenderer::NewRenderLines() {
