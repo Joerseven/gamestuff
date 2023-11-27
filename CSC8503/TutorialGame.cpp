@@ -128,7 +128,7 @@ void TutorialGame::UpdateGame(float dt) {
 		}
 	}
 
-	Debug::DrawLine(Vector3(), Vector3(0, 100, 0), Vector4(1, 0, 0, 1));
+	Debug::DrawLine(Vector3(500, 0, 500), Vector3(500, 100, 500), Vector4(1, 0, 0, 1));
 
 	SelectObject();
 	MoveSelectedObject();
@@ -448,6 +448,8 @@ void TutorialGame::InitMixedGridWorld(int numRows, int numCols, float rowSpacing
 			}
 		}
 	}
+
+    BridgeConstraintTest();
 }
 
 void TutorialGame::InitCubeGridWorld(int numRows, int numCols, float rowSpacing, float colSpacing, const Vector3& cubeDims) {
@@ -544,6 +546,32 @@ Debug::Print("Click Force:" + std::to_string(forceMagnitude), Vector2(5, 90));
 			}
 		}
 	}
+}
+
+void TutorialGame::BridgeConstraintTest() {
+    Vector3 cubeSize = Vector3(8,8,8);
+
+    float invCubeMass = 5;
+    int numLinks = 10;
+    float maxDistance = 30;
+    float cubeDistance = 20;
+
+    Vector3 startPos = Vector3(500, 0, 500);
+
+    GameObject* start = AddCubeToWorld(startPos + Vector3(0,0,0), cubeSize, 0);
+    GameObject* end = AddCubeToWorld(startPos + Vector3((numLinks + 2) * cubeDistance, 0, 0), cubeSize, 0);
+
+    GameObject* previous = start;
+
+    for (int i = 0; i < numLinks; i++) {
+        GameObject* block = AddCubeToWorld(startPos + Vector3((i+1) * cubeDistance, 0, 0), cubeSize, invCubeMass);
+        PositionConstraint* constraint = new PositionConstraint(previous, block, maxDistance);
+        world->AddConstraint(constraint);
+        previous = block;
+    }
+
+    PositionConstraint* constraint = new PositionConstraint(previous, end, maxDistance);
+    world->AddConstraint(constraint);
 }
 
 
