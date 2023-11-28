@@ -77,6 +77,7 @@ namespace NCL {
 			Mesh*	sphereMesh	= nullptr;
 
 			Texture*	basicTex	= nullptr;
+            Texture*    assetColorMap = nullptr;
 			Shader*		basicShader = nullptr;
 
 			//Coursework Meshes

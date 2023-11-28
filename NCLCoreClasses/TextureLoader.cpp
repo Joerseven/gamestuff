@@ -37,6 +37,8 @@ bool TextureLoader::LoadTexture(const std::string& filename, char*& outData, int
 		//There's a custom handler function for this, just use that
 		return it->second(realPath, outData, width, height, channels, flags);
 	}
+
+    stbi_set_flip_vertically_on_load(true);
 	//By default, attempt to use stb image to get this texture
 	stbi_uc *texData = stbi_load(realPath.c_str(), &width, &height, &channels, 4); //4 forces this to always be rgba!
 

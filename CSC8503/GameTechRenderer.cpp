@@ -352,27 +352,27 @@ Mesh *GameTechRenderer::LoadOBJMesh(const std::string &name) {
         };
 
         vertices.push_back(original[0]);
-        textureCoords.push_back(Vector2(
+        textureCoords.emplace_back(
                 attrib.texcoords[indices[3 * index].texcoord_index * 2],
                 attrib.texcoords[indices[3 * index].texcoord_index * 2 + 1]
-        ));
-        colors.push_back(Vector4(materials[material_ids[index]].diffuse[0],materials[material_ids[index]].diffuse[1],materials[material_ids[index]].diffuse[2], 1.0));
+        );
+        colors.emplace_back(materials[material_ids[index]].diffuse[0],materials[material_ids[index]].diffuse[1],materials[material_ids[index]].diffuse[2], 1.0);
         indi.push_back(vertices.size() - 1);
 
         vertices.push_back(original[1]);
-        textureCoords.push_back(Vector2(
+        textureCoords.emplace_back(
                 attrib.texcoords[indices[3 * index + 1].texcoord_index * 2],
                 attrib.texcoords[indices[3 * index + 1].texcoord_index * 2 + 1]
-        ));
-        colors.push_back(Vector4(materials[material_ids[index]].diffuse[0],materials[material_ids[index]].diffuse[1],materials[material_ids[index]].diffuse[2], 1.0));
+        );
+        colors.emplace_back(materials[material_ids[index]].diffuse[0],materials[material_ids[index]].diffuse[1],materials[material_ids[index]].diffuse[2], 1.0);
         indi.push_back(vertices.size() - 1);
 
         vertices.push_back(original[2]);
-        textureCoords.push_back(Vector2(
+        textureCoords.emplace_back(
                 attrib.texcoords[indices[3 * index + 2].texcoord_index * 2],
                 attrib.texcoords[indices[3 * index + 2].texcoord_index * 2 + 1]
-        ));
-        colors.push_back(Vector4(materials[material_ids[index]].diffuse[0],materials[material_ids[index]].diffuse[1],materials[material_ids[index]].diffuse[2], 1.0));
+        );
+        colors.emplace_back(materials[material_ids[index]].diffuse[0],materials[material_ids[index]].diffuse[1],materials[material_ids[index]].diffuse[2], 1.0);
         indi.push_back(vertices.size() - 1);
     }
 
@@ -382,6 +382,8 @@ Mesh *GameTechRenderer::LoadOBJMesh(const std::string &name) {
     mesh->SetVertexColours(colors);
 
     mesh->SetPrimitiveType(GeometryPrimitive::Triangles);
+
+    mesh->AddSubMesh(0, indi.size(), 0, "main");
 
     mesh->RecalculateNormals();
     mesh->UploadToGPU();

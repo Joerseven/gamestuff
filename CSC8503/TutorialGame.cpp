@@ -55,9 +55,10 @@ void TutorialGame::InitialiseAssets() {
 	enemyMesh	= renderer->LoadMesh("Keeper.msh");
 	bonusMesh	= renderer->LoadMesh("apple.msh");
 	capsuleMesh = renderer->LoadMesh("capsule.msh");
-    graveStone = renderer->LoadOBJMesh("../../Assets/Meshes/gravestone-bevel.obj");
+    graveStone = renderer->LoadOBJMesh("../../Assets/Meshes/hay-bale-bundled.obj");
 
 	basicTex	= renderer->LoadTexture("checkerboard.png");
+    assetColorMap = renderer->LoadTexture("colormap.png");
 	basicShader = renderer->LoadShader("scene.vert", "scene.frag");
 
 	InitCamera();
@@ -70,6 +71,7 @@ TutorialGame::~TutorialGame()	{
 	delete charMesh;
 	delete enemyMesh;
 	delete bonusMesh;
+    delete graveStone;
 
 	delete basicTex;
 	delete basicShader;
@@ -267,9 +269,9 @@ void TutorialGame::InitWorld() {
 	world->ClearAndErase();
 	physics->Clear();
 
-	InitMixedGridWorld(15, 15, 3.5f, 3.5f);
+	//InitMixedGridWorld(15, 15, 3.5f, 3.5f);
 
-	InitGameExamples();
+	//InitGameExamples();
 	InitDefaultFloor();
     testStateObject = AddStateObjectToWorld(Vector3(0, 10, 0));
 }
@@ -365,7 +367,7 @@ GameObject* TutorialGame::AddPlayerToWorld(const Vector3& position) {
 		.SetScale(Vector3(meshSize, meshSize, meshSize))
 		.SetPosition(position);
 
-	character->SetRenderObject(new RenderObject(&character->GetTransform(), charMesh, nullptr, basicShader));
+	character->SetRenderObject(new RenderObject(&character->GetTransform(),   charMesh, nullptr, basicShader));
 	character->SetPhysicsObject(new PhysicsObject(&character->GetTransform(), character->GetBoundingVolume()));
 
 	character->GetPhysicsObject()->SetInverseMass(inverseMass);
@@ -591,7 +593,7 @@ StateGameObject *TutorialGame::AddStateObjectToWorld(const Vector3 &position) {
             .SetScale(Vector3(40, 40, 40))
             .SetPosition(position);
 
-    apple->SetRenderObject(new RenderObject(&apple->GetTransform(), graveStone, nullptr, basicShader));
+    apple->SetRenderObject(new RenderObject(&apple->GetTransform(), graveStone, assetColorMap, basicShader));
     apple->SetPhysicsObject(new PhysicsObject(&apple->GetTransform(), apple->GetBoundingVolume()));
 
     apple->GetPhysicsObject()->SetInverseMass(1.0f);

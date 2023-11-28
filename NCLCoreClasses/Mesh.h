@@ -178,6 +178,8 @@ namespace NCL::Rendering {
 		const std::vector<Vector4i>&		GetSkinIndexData()		const { return skinIndices; }
 
 		const std::vector<int>& GetJointParents()	const {
+
+
 			return jointParents;
 		}
 
@@ -206,12 +208,12 @@ namespace NCL::Rendering {
 			assetID = newID;
 		}
 
-	protected:
+        virtual bool ValidateMeshData();
+
+    protected:
 		Mesh();
 
-		virtual bool ValidateMeshData();
-
-		GeometryPrimitive::Type		primType;
+        GeometryPrimitive::Type		primType;
 		std::string					debugName;
 		uint32_t					assetID;
 
