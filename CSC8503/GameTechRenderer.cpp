@@ -338,6 +338,10 @@ Mesh *GameTechRenderer::LoadOBJMesh(const std::string &name) {
     auto textureCoords = std::vector<Vector2>();
     auto indi = std::vector<GLuint>();
 
+    auto previousIndex = 0;
+    auto indexCount = 0;
+    auto vertCount = 0;
+
     for (size_t index = 0; index < material_ids.size(); index++) {
         Vector3 original[] = {
                 Vector3(attrib.vertices[indices[3 * index].vertex_index * 3],

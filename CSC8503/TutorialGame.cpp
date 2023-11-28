@@ -55,7 +55,7 @@ void TutorialGame::InitialiseAssets() {
 	enemyMesh	= renderer->LoadMesh("Keeper.msh");
 	bonusMesh	= renderer->LoadMesh("apple.msh");
 	capsuleMesh = renderer->LoadMesh("capsule.msh");
-    graveStone = renderer->LoadOBJMesh("../../Assets/Meshes/hay-bale-bundled.obj");
+    graveStone = renderer->LoadOBJMesh("../../Assets/Meshes/character-digger.obj");
 
 	basicTex	= renderer->LoadTexture("checkerboard.png");
     assetColorMap = renderer->LoadTexture("colormap.png");
