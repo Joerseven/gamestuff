@@ -33,6 +33,7 @@ namespace NCL::CSC8503 {
 		char	buttonstates[8];
 
 		ClientPacket() {
+            type = Received_State;
 			size = sizeof(ClientPacket);
 		}
 	};

@@ -31,11 +31,14 @@ NetworkedGame::~NetworkedGame()	{
 }
 
 void NetworkedGame::StartAsServer() {
+
 	thisServer = new GameServer(NetworkBase::GetDefaultPort(), 4);
 
 	thisServer->RegisterPacketHandler(Received_State, this);
 
 	StartLevel();
+
+    std::cout << "Sever started successfully" << std::endl;
 }
 
 void NetworkedGame::StartAsClient(char a, char b, char c, char d) {
@@ -47,16 +50,18 @@ void NetworkedGame::StartAsClient(char a, char b, char c, char d) {
 	thisClient->RegisterPacketHandler(Player_Connected, this);
 	thisClient->RegisterPacketHandler(Player_Disconnected, this);
 
-	StartLevel();
+	SpawnPlayer();
+
+    std::cout << "Client started successfully" << std::endl;
 }
 
 void NetworkedGame::UpdateGame(float dt) {
 	timeToNextPacket -= dt;
 	if (timeToNextPacket < 0) {
 		if (thisServer) {
-			UpdateAsServer(dt);
+			//UpdateAsServer(dt);
 		}
-		else if (thisClient) {
+		if (thisClient) {
 			UpdateAsClient(dt);
 		}
 		timeToNextPacket += 1.0f / 20.0f; //20hz server/client update
@@ -68,6 +73,14 @@ void NetworkedGame::UpdateGame(float dt) {
 	if (!thisClient && Window::GetKeyboard()->KeyPressed(KeyCodes::F10)) {
 		StartAsClient(127,0,0,1);
 	}
+
+    if (thisClient) {
+        thisClient->UpdateClient();
+    }
+
+    if (thisServer) {
+        thisServer->UpdateServer();
+    }
 
 	TutorialGame::UpdateGame(dt);
 }
@@ -89,8 +102,9 @@ void NetworkedGame::UpdateAsClient(float dt) {
 	if (Window::GetKeyboard()->KeyPressed(KeyCodes::SPACE)) {
 		//fire button pressed!
 		newPacket.buttonstates[0] = 1;
-		newPacket.lastID = 0; //You'll need to work this out somehow...
+		newPacket.lastID = 0; //You'll need to work this out somehow..
 	}
+
 	thisClient->SendPacket(newPacket);
 }
 
@@ -144,15 +158,17 @@ void NetworkedGame::UpdateMinimumState() {
 }
 
 void NetworkedGame::SpawnPlayer() {
-
+    AddPlayerToWorld(Vector3(0,0,0));
 }
 
 void NetworkedGame::StartLevel() {
-
+    InitWorld();
 }
 
 void NetworkedGame::ReceivePacket(int type, GamePacket* payload, int source) {
-	
+	if (payload->type == Full_State || payload->type == Delta_State) {
+        // Loop through game objects, if it equals the network id update it.
+    }
 }
 
 void NetworkedGame::OnPlayerCollision(NetworkPlayer* a, NetworkPlayer* b) {

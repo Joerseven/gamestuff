@@ -102,8 +102,8 @@ void TestNetworking() {
     server->RegisterPacketHandler(String_Message, &serverReciever);
     client->RegisterPacketHandler(String_Message, &clientReciever);
 
-    auto test1 = StringPacket("Server says hello! " + std::to_string(12));
-    auto test2 = StringPacket("Server says hello! " + std::to_string(12));
+    auto test1 = StringPacket("Server says hello! " + std::to_string(15));
+    auto test2 = StringPacket("Client says hello! " + std::to_string(12));
 
     bool canConnect = client->Connect(127, 0, 0, 1, port);
     for (int i = 0; i < 100; i++) {
@@ -142,7 +142,7 @@ int main() {
 	w->ShowOSPointer(false);
 	w->LockMouseToWindow(true);
 
-	TutorialGame* g = new TutorialGame();
+	auto g = new NetworkedGame();
 	w->GetTimer().GetTimeDeltaSeconds(); //Clear the timer so we don't get a larget first dt!
 	while (w->UpdateWindow() && !Window::GetKeyboard()->KeyDown(KeyCodes::ESCAPE)) {
 		float dt = w->GetTimer().GetTimeDeltaSeconds();

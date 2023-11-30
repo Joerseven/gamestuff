@@ -62,7 +62,7 @@ void TutorialGame::InitialiseAssets() {
 	basicShader = renderer->LoadShader("scene.vert", "scene.frag");
 
 	InitCamera();
-	InitWorld();
+	//InitWorld();
 }
 
 TutorialGame::~TutorialGame()	{
@@ -273,7 +273,7 @@ void TutorialGame::InitWorld() {
 
 	//InitGameExamples();
 	InitDefaultFloor();
-    testStateObject = AddStateObjectToWorld(Vector3(0, 10, 0));
+    //testStateObject = AddStateObjectToWorld(Vector3(0, 10, 0));
 }
 
 /*
