@@ -14,6 +14,7 @@
 #include "GameServer.h"
 #include "NetworkObject.h"
 #include "PhysicsObject.h"
+#include "Replicated.h"
 
 using namespace NCL;
 using namespace CSC8503;

@@ -20,9 +20,9 @@ ClientGame::ClientGame() : controller(*Window::GetWindow()->GetKeyboard(), *Wind
 
     NetworkBase::Initialise();
 
-    std::cout << "Client started successfully" << std::endl;
-
     InitialiseAssets();
+
+    StartAsClient(127, 0, 0, 1);
 }
 
 ClientGame::~ClientGame() {
@@ -41,6 +41,7 @@ void ClientGame::UpdateGame(float dt) {
     renderer->Update(dt);
 
     renderer->Render();
+    thisClient->UpdateClient();
     //Debug::UpdateRenderables(dt);
 }
 

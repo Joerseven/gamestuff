@@ -9,13 +9,15 @@ ServerGame::ServerGame() {
     NetworkBase::Initialise();
     server = new GameServer(NetworkBase::GetDefaultPort(), 4);
     server->RegisterPacketHandler(Received_State, this);
+    server->RegisterPacketHandler(Server_Message, this);
+
+    std::cout << "Server starting up" << std::endl;
 
     world = new GameWorld();
     physics = new PhysicsSystem(*world);
 
     forceMagnitude = 10.0f;
     timeToNextPacket  = 0.0f;
-
 
     InitWorld();
 
@@ -29,11 +31,11 @@ ServerGame::~ServerGame() {
 
 void ServerGame::UpdateGame(float dt) {
     timeToNextPacket -= dt;
-    std::cout << timeToNextPacket << std::endl;
     if (timeToNextPacket < 0) {
         BroadcastSnapshot();
         timeToNextPacket += 1.0f / 20.0f;
     }
+    server->UpdateServer();
 }
 
 void ServerGame::BroadcastSnapshot() {
@@ -60,8 +62,13 @@ void ServerGame::InitWorld() {
 
 }
 
+void DebugPackets(int type, GamePacket *payload, int source) {
+    std::cout << "Recieved Packet: " << std::endl;
+    std::cout << "type: " << type << std::endl;
+    std::cout << "source: " << source << std::endl;
+}
 void ServerGame::ReceivePacket(int type, GamePacket *payload, int source) {
-
+    DebugPackets(type, payload, source);
 }
 
 

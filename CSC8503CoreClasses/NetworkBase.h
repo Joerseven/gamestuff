@@ -14,7 +14,8 @@ enum BasicNetworkMessages {
 	Received_State, //received from a client, informs that its received packet n
 	Player_Connected,
 	Player_Disconnected,
-	Shutdown
+	Shutdown,
+    Server_Message
 };
 
 struct GamePacket {
@@ -46,7 +47,7 @@ public:
 	static void Destroy();
 
 	static int GetDefaultPort() {
-		return 1234;
+		return 26656;
 	}
 
 	void RegisterPacketHandler(int msgID, PacketReceiver* receiver) {
