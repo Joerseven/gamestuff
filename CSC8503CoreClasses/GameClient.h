@@ -1,5 +1,6 @@
 #pragma once
 #include "NetworkBase.h"
+#include "GameWorld.h"
 #include <stdint.h>
 #include <thread>
 #include <atomic>

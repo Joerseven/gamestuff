@@ -71,6 +71,11 @@ if(MSVC)
     add_compile_definitions("WIN32_LEAN_AND_MEAN")  
 endif()
 
+include_directories(CSC8503CoreClasses)
+include_directories(NCLCoreClasses)
+include_directories(OpenGLRendering)
+include_directories(CSC8503)
+include_directories(Replicated)
 
 ################################################################################
 # Sub-projects
@@ -79,6 +84,8 @@ add_subdirectory(NCLCoreClasses)
 add_subdirectory(CSC8503CoreClasses)
 add_subdirectory(OpenGLRendering)
 add_subdirectory(CSC8503)
+add_subdirectory(Server)
+add_subdirectory(Client)
 if(USE_VULKAN)
     add_subdirectory(VulkanRendering)
 endif()

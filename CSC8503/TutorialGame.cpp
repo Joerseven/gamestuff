@@ -62,7 +62,7 @@ void TutorialGame::InitialiseAssets() {
 	basicShader = renderer->LoadShader("scene.vert", "scene.frag");
 
 	InitCamera();
-	//InitWorld();
+	InitWorld();
 }
 
 TutorialGame::~TutorialGame()	{

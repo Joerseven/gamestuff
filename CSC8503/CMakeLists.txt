@@ -19,6 +19,8 @@ set(Source_Files
     "NetworkPlayer.cpp"
     "StateGameObject.cpp"
     "TutorialGame.cpp"
+	"../Client/ClientGame.cpp"
+	"../Server/ServerGame.cpp"
 )
 
 if(USE_VULKAN)
@@ -91,7 +93,7 @@ endif()
 ################################################################################
 # Target
 ################################################################################
-add_executable(${PROJECT_NAME}  ${ALL_FILES})
+add_library(${PROJECT_NAME}  ${ALL_FILES})
 
 use_props(${PROJECT_NAME} "${CMAKE_CONFIGURATION_TYPES}" "${DEFAULT_CXX_PROPS}")
 set(ROOT_NAMESPACE CSC8503)

@@ -38,7 +38,7 @@ void NetworkedGame::StartAsServer() {
 
 	StartLevel();
 
-    std::cout << "Sever started successfully" << std::endl;
+    std::cout << "Server started successfully" << std::endl;
 }
 
 void NetworkedGame::StartAsClient(char a, char b, char c, char d) {
