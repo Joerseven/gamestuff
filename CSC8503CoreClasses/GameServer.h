@@ -19,6 +19,8 @@ namespace NCL {
 
 			virtual void UpdateServer();
 
+            int currentSnapshot;
+
 		protected:
 			int			port;
 			int			clientMax;
@@ -27,6 +29,9 @@ namespace NCL {
 
 			int incomingDataRate;
 			int outgoingDataRate;
+
+            std::map<int, int> lastPlayerUpdate;
+
 		};
 	}
 }

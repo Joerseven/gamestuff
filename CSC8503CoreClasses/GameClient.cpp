@@ -5,6 +5,7 @@ using namespace CSC8503;
 
 GameClient::GameClient()	{
 	netHandle = enet_host_create(nullptr, 1, 1, 0, 0);
+    lastServerSnapshot = 0;
 }
 
 GameClient::~GameClient()	{

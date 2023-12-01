@@ -9,6 +9,7 @@ GameServer::GameServer(int onPort, int maxClients)	{
 	clientMax	= maxClients;
 	clientCount = 0;
 	netHandle	= nullptr;
+    currentSnapshot = 0;
 	Initialise();
 }
 
@@ -59,10 +60,12 @@ void GameServer::UpdateServer() {
 
         if (type == ENetEventType::ENET_EVENT_TYPE_CONNECT) {
             std::cout << "Server: New client connected" << std::endl;
+            lastPlayerUpdate.insert(std::make_pair(p->incomingPeerID, currentSnapshot));
         }
 
         else if (type == ENetEventType::ENET_EVENT_TYPE_DISCONNECT) {
             std::cout << "Server: A client has disconnected" << std::endl;
+            lastPlayerUpdate.erase(p->incomingPeerID);
         }
 
         else if (type == ENetEventType::ENET_EVENT_TYPE_RECEIVE) {

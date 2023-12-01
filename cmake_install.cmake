@@ -1,4 +1,4 @@
-# Install script for directory: C:/workplz/gamestuff
+# Install script for directory: C:/Users/jdhyd/Documents/GitHub/TwoEngine/gamestuff
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -34,22 +34,22 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("C:/workplz/gamestuff/NCLCoreClasses/cmake_install.cmake")
+  include("C:/Users/jdhyd/Documents/GitHub/TwoEngine/gamestuff/NCLCoreClasses/cmake_install.cmake")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("C:/workplz/gamestuff/CSC8503CoreClasses/cmake_install.cmake")
+  include("C:/Users/jdhyd/Documents/GitHub/TwoEngine/gamestuff/CSC8503CoreClasses/cmake_install.cmake")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("C:/workplz/gamestuff/OpenGLRendering/cmake_install.cmake")
+  include("C:/Users/jdhyd/Documents/GitHub/TwoEngine/gamestuff/OpenGLRendering/cmake_install.cmake")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("C:/workplz/gamestuff/CSC8503/cmake_install.cmake")
+  include("C:/Users/jdhyd/Documents/GitHub/TwoEngine/gamestuff/CSC8503/cmake_install.cmake")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT)
@@ -60,5 +60,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "C:/workplz/gamestuff/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "C:/Users/jdhyd/Documents/GitHub/TwoEngine/gamestuff/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

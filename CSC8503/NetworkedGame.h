@@ -1,6 +1,7 @@
 #pragma once
 #include "TutorialGame.h"
 #include "NetworkBase.h"
+#include "PhysicsObject.h"
 
 namespace NCL {
 	namespace CSC8503 {

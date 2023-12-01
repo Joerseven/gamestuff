@@ -99,11 +99,25 @@ void NetworkedGame::UpdateAsServer(float dt) {
 void NetworkedGame::UpdateAsClient(float dt) {
 	ClientPacket newPacket;
 
-	if (Window::GetKeyboard()->KeyPressed(KeyCodes::SPACE)) {
-		//fire button pressed!
+    for (size_t s = 0; s < 8; s++) {
+        newPacket.buttonstates[s] = 0;
+    }
+
+	if (Window::GetKeyboard()->KeyDown(KeyCodes::UP)) {
 		newPacket.buttonstates[0] = 1;
-		newPacket.lastID = 0; //You'll need to work this out somehow..
 	}
+
+    if (Window::GetKeyboard()->KeyDown(KeyCodes::LEFT)) {
+        newPacket.buttonstates[1] = 1;
+    }
+
+    if (Window::GetKeyboard()->KeyDown(KeyCodes::DOWN)) {
+        newPacket.buttonstates[2] = 1;
+    }
+
+    if (Window::GetKeyboard()->KeyDown(KeyCodes::RIGHT)) {
+        newPacket.buttonstates[3] = 1;
+    }
 
 	thisClient->SendPacket(newPacket);
 }
@@ -123,10 +137,10 @@ void NetworkedGame::BroadcastSnapshot(bool deltaFrame) {
 		//when a player has sent the server an acknowledgement
 		//and store the lastID somewhere. A map between player
 		//and an int could work, or it could be part of a 
-		//NetworkPlayer struct. 
+		//NetworkPlayer struct.
 		int playerState = 0;
 		GamePacket* newPacket = nullptr;
-		if (o->WritePacket(&newPacket, deltaFrame, playerState)) {
+		if (o->WritePacket(&newPacket, deltaFrame, ++thisServer->currentSnapshot)) {
 			thisServer->SendGlobalPacket(*newPacket);
 			delete newPacket;
 		}
@@ -158,7 +172,7 @@ void NetworkedGame::UpdateMinimumState() {
 }
 
 void NetworkedGame::SpawnPlayer() {
-    AddPlayerToWorld(Vector3(0,0,0));
+    localPlayer = AddPlayerToWorld(Vector3(0,0,0));
 }
 
 void NetworkedGame::StartLevel() {
@@ -166,8 +180,17 @@ void NetworkedGame::StartLevel() {
 }
 
 void NetworkedGame::ReceivePacket(int type, GamePacket* payload, int source) {
-	if (payload->type == Full_State || payload->type == Delta_State) {
-        // Loop through game objects, if it equals the network id update it.
+	if (thisServer) {
+        if (type == Received_State) {
+            if (localPlayer) {
+                auto pressed = ((ClientPacket*)payload)->buttonstates;
+                float mag = 100.0f;
+                localPlayer->GetPhysicsObject()->AddForce(Vector3(
+                        (float)pressed[3] * mag + (float)pressed[1] * mag * -1,
+                        0,
+                        (float)pressed[2] * mag + (float)pressed[0] * mag * -1));
+            }
+        }
     }
 }
 

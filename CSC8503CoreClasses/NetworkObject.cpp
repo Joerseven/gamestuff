@@ -76,6 +76,7 @@ bool NetworkObject::WriteDeltaPacket(GamePacket**p, int stateID) {
 	DeltaPacket* dp = new DeltaPacket();
     NetworkState state;
     if (!GetNetworkState(stateID, state)) {
+        std::cout << "State is somehow lower wtf" << std::endl;
         return false;
     }
 
