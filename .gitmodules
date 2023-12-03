@@ -10,6 +10,3 @@
 [submodule "OpenGLRendering"]
 	path = OpenGLRendering
 	url = https://github.com/RichDavisonNCL/OpenGLRendering
-[submodule "lua"]
-	path = lua
-	url = https://github.com/lua/lua.git
