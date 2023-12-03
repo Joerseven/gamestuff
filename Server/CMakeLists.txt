@@ -8,6 +8,7 @@ target_include_directories(server PUBLIC ../Replicated)
 target_link_libraries(${PROJECT_NAME} LINK_PUBLIC NCLCoreClasses)
 target_link_libraries(${PROJECT_NAME} LINK_PUBLIC CSC8503CoreClasses)
 target_link_libraries(${PROJECT_NAME} LINK_PUBLIC OpenGLRendering)
+target_link_libraries(${PROJECT_NAME} LINK_PUBLIC lua)
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE
         <vector>
@@ -38,39 +39,3 @@ target_precompile_headers(${PROJECT_NAME} PRIVATE
 
         "../NCLCoreClasses/GameTimer.h"
 )
-
-target_compile_definitions(${PROJECT_NAME} PRIVATE
-        "UNICODE;"
-        "_UNICODE"
-        "WIN32_LEAN_AND_MEAN"
-        "_WINSOCKAPI_"
-        "_WINSOCK2API_"
-        "_WINSOCK_DEPRECATED_NO_WARNINGS"
-)
-target_compile_options(${PROJECT_NAME} PRIVATE
-        $<$<CONFIG:Release>:
-        /Oi;
-        /Gy
-        >
-        /permissive-;
-        /std:c++latest;
-        /sdl;
-        /W3;
-        ${DEFAULT_CXX_DEBUG_INFORMATION_FORMAT};
-        ${DEFAULT_CXX_EXCEPTION_HANDLING};
-        /Y-
-)
-target_link_options(${PROJECT_NAME} PRIVATE
-        $<$<CONFIG:Release>:
-        /OPT:REF;
-        /OPT:ICF
-        >
-)
-
-set_target_properties(${PROJECT_NAME} PROPERTIES
-        VS_GLOBAL_KEYWORD "Win32Proj"
-)
-set_target_properties(${PROJECT_NAME} PROPERTIES
-        INTERPROCEDURAL_OPTIMIZATION_RELEASE "TRUE"
-)
-

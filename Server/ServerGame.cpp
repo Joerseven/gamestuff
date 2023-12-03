@@ -24,6 +24,18 @@ ServerGame::ServerGame() {
 
     ClearPlayers();
 
+    lua_State *L = luaL_newstate();
+    luaL_openlibs(L);
+
+    auto status = luaL_dofile(L, "../Assets/Data/Levels.lua");
+
+    if (status) {
+        std::cerr << "Lua file giga dead: " << lua_tostring(L, -1);
+        exit(1);
+    }
+
+    lua_close(L);
+
     InitWorld();
 
 }
@@ -46,8 +58,6 @@ void ServerGame::UpdateGame(float dt) {
 
     world->UpdateWorld(dt);
     physics->Update(dt);
-
-
 }
 
 void ServerGame::BroadcastSnapshot() {

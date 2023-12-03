@@ -80,6 +80,7 @@ include_directories(Replicated)
 ################################################################################
 # Sub-projects
 ################################################################################
+add_subdirectory(lua)
 add_subdirectory(NCLCoreClasses)
 add_subdirectory(CSC8503CoreClasses)
 add_subdirectory(OpenGLRendering)
