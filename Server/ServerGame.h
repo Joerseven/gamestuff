@@ -16,6 +16,8 @@
 #include "PhysicsObject.h"
 #include "Replicated.h"
 
+#include <array>
+
 using namespace NCL;
 using namespace CSC8503;
 
@@ -38,10 +40,21 @@ protected:
 
     float forceMagnitude;
     int currentSnapshot;
+    int netIdCounter;
 
     void BroadcastSnapshot();
+    void ClearPlayers();
 
     GameObject *AddFloorToWorld(const Vector3 &position);
+    void AddPlayerObjects(const Vector3 &position);
+
+    GameObject *CreatePlayer(int peerId);
+    void PlayerLeft(int peerId);
+
+    std::array<GameObject*, 4> players;
+    std::map<int, int> playerMap;
+    int playersJoined = 0;
+
 };
 
 

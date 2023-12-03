@@ -12,8 +12,19 @@ struct ServerMessagePacket : public GamePacket {
         size = sizeof(short);
     }
 };
+
+// Add different messages here
 enum ServerMessages {
     Player_Loaded
 };
+
+
+
+// Questions
+/*
+ * 1. handling int overflow on the state ids?
+ * 2. better organisation with gameobjects and client/server?
+ * 3.
+ */
 
 #endif //CSC8503_REPLICATED_H

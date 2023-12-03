@@ -55,6 +55,12 @@ void ClientGame::StartAsClient(char a, char b, char c, char d) {
     thisClient->RegisterPacketHandler(Player_Disconnected, this);
     thisClient->RegisterPacketHandler(Message, this);
 
+    thisClient->connectCallback = [&](){
+        ServerMessagePacket p;
+        p.messageID = Player_Loaded;
+        thisClient->SendPacket(p);
+    };
+
     std::cout << "Client started successfully" << std::endl;
 }
 

@@ -20,6 +20,7 @@ namespace NCL {
 			void UpdateClient();
 
             int lastServerSnapshot;
+            std::function<void()> connectCallback;
 		protected:	
 			_ENetPeer*	netPeer;
 		};
