@@ -74,6 +74,7 @@ void ClientGame::InitialiseAssets() {
 
     InitCamera();
     InitWorld();
+    AddPlayerObjects({0,0,0});
 }
 
 void ClientGame::InitCamera() {
@@ -119,7 +120,35 @@ GameObject* ClientGame::AddFloorToWorld(const Vector3& position) {
 }
 
 void ClientGame::ReceivePacket(int type, GamePacket *payload, int source) {
+    if (type == Full_State) {
+        netObjects[((FullPacket*)payload)->objectID]->ReadPacket(*payload);
+    }
+}
 
+void ClientGame::AddPlayerObjects(const Vector3 &position) {
+
+    netObjects.resize(4);
+
+    for (int i = 0; i < 4; i++) {
+        float meshSize		= 1.0f;
+        float inverseMass	= 0.5f;
+
+        auto character = new GameObject();
+        auto volume  = new SphereVolume(1.0f);
+
+        character->SetBoundingVolume((CollisionVolume*)volume);
+
+        character->GetTransform()
+                .SetScale(Vector3(meshSize, meshSize, meshSize))
+                .SetPosition(position);
+
+        character->SetNetworkObject(new NetworkObject(*character, i));
+        character->SetRenderObject(new RenderObject(&character->GetTransform(), charMesh, nullptr, basicShader));
+        netObjects[i] = character->GetNetworkObject();
+        character->SetActive(false);
+
+        world->AddGameObject(character);
+    }
 }
 
 int main() {

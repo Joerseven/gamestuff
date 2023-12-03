@@ -67,6 +67,8 @@ bool NetworkObject::ReadFullPacket(FullPacket &p) {
     object.GetTransform().SetPosition(lastFullState.position);
     object.GetTransform().SetOrientation(lastFullState.orientation);
 
+    object.SetActive(true);
+
     stateHistory.emplace_back(lastFullState);
 
     return true;

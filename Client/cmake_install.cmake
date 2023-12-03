@@ -1,4 +1,4 @@
-# Install script for directory: C:/Users/jdhyd/Documents/GitHub/TwoEngine/gamestuff/Client
+# Install script for directory: C:/workplz/gamestuff/Client
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

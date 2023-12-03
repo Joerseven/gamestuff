@@ -20,6 +20,8 @@ ServerGame::ServerGame() {
     timeToNextPacket  = 0.0f;
     netIdCounter = 0;
 
+    physics->UseGravity(true);
+
     ClearPlayers();
 
     InitWorld();
@@ -33,12 +35,19 @@ ServerGame::~ServerGame() {
 }
 
 void ServerGame::UpdateGame(float dt) {
+
+    server->UpdateServer();
+
     timeToNextPacket -= dt;
     if (timeToNextPacket < 0) {
         BroadcastSnapshot();
         timeToNextPacket += 1.0f / 20.0f;
     }
-    server->UpdateServer();
+
+    world->UpdateWorld(dt);
+    physics->Update(dt);
+
+
 }
 
 void ServerGame::BroadcastSnapshot() {
@@ -46,6 +55,8 @@ void ServerGame::BroadcastSnapshot() {
     std::vector<GameObject*>::const_iterator last;
 
     world->GetObjectIterators(first, last);
+
+    currentSnapshot++;
 
     for (auto i = first; i != last; ++i) {
 
@@ -59,7 +70,7 @@ void ServerGame::BroadcastSnapshot() {
         }
 
         GamePacket* newPacket = nullptr;
-        if (o->WritePacket(&newPacket, false, ++currentSnapshot)) {
+        if (o->WritePacket(&newPacket, false, currentSnapshot)) {
             server->SendGlobalPacket(*newPacket);
             delete newPacket;
         }

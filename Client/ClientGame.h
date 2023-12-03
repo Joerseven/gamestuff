@@ -13,6 +13,7 @@
 #include "RenderObject.h"
 #include "GameClient.h"
 #include "Replicated.h"
+#include "NetworkObject.h"
 
 using namespace NCL;
 using namespace CSC8503;
@@ -43,9 +44,11 @@ protected:
     Texture* assetColorMap = nullptr;
     Shader* basicShader = nullptr;
 
-    GameObject *AddFloorToWorld(const Vector3 &position);
+    GameObject *AddFloorToWorld(const Vector3& position);
+    void AddPlayerObjects(const Vector3& position);
 
     void StartAsClient(char a, char b, char c, char d);
+    std::vector<NetworkObject*> netObjects;
 };
 
 
