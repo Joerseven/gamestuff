@@ -14,7 +14,7 @@
 #include "GameServer.h"
 #include "NetworkObject.h"
 #include "PhysicsObject.h"
-#include "Replicated.h"D
+#include "Replicated.h"
 
 extern "C" {
 #include "lua.h"
