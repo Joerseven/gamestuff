@@ -1,0 +1,262 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7
+					],
+					"jsonFile" : "directory-.-Debug-d0094a50bb2071803777.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16.0"
+					},
+					"projectIndex" : 0,
+					"source" : "."
+				},
+				{
+					"build" : "lua",
+					"jsonFile" : "directory-lua-Debug-d2fa581dd15bc71e2bf3.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16.0"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 1,
+					"source" : "lua",
+					"targetIndexes" : 
+					[
+						5
+					]
+				},
+				{
+					"build" : "NCLCoreClasses",
+					"jsonFile" : "directory-NCLCoreClasses-Debug-f2db015ae7922231cd93.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16.0"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "NCLCoreClasses",
+					"targetIndexes" : 
+					[
+						2
+					]
+				},
+				{
+					"build" : "CSC8503CoreClasses",
+					"jsonFile" : "directory-CSC8503CoreClasses-Debug-2ee4de21ed7b040fd2ce.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16.0"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "CSC8503CoreClasses",
+					"targetIndexes" : 
+					[
+						1
+					]
+				},
+				{
+					"build" : "OpenGLRendering",
+					"jsonFile" : "directory-OpenGLRendering-Debug-7bfd441e8506152ad447.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16.0"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "OpenGLRendering",
+					"targetIndexes" : 
+					[
+						3
+					]
+				},
+				{
+					"build" : "CSC8503",
+					"jsonFile" : "directory-CSC8503-Debug-89b15dcb0e707ea3be12.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16.0"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "CSC8503",
+					"targetIndexes" : 
+					[
+						0
+					]
+				},
+				{
+					"build" : "Server",
+					"jsonFile" : "directory-Server-Debug-08cc111fca47106482c9.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.0"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 2,
+					"source" : "Server",
+					"targetIndexes" : 
+					[
+						6
+					]
+				},
+				{
+					"build" : "Client",
+					"jsonFile" : "directory-Client-Debug-32ce8e758cccb39b8cc7.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.0"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 3,
+					"source" : "Client",
+					"targetIndexes" : 
+					[
+						4
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"childIndexes" : 
+					[
+						1,
+						2,
+						3
+					],
+					"directoryIndexes" : 
+					[
+						0,
+						2,
+						3,
+						4,
+						5
+					],
+					"name" : "CSC8503",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						1
+					],
+					"name" : "lua",
+					"parentIndex" : 0,
+					"targetIndexes" : 
+					[
+						5
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						6
+					],
+					"name" : "server",
+					"parentIndex" : 0,
+					"targetIndexes" : 
+					[
+						6
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						7
+					],
+					"name" : "client",
+					"parentIndex" : 0,
+					"targetIndexes" : 
+					[
+						4
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 5,
+					"id" : "CSC8503::@6219ac6a3c5e7ef5b3a0",
+					"jsonFile" : "target-CSC8503-Debug-c9280dc1d2324c9893bd.json",
+					"name" : "CSC8503",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 3,
+					"id" : "CSC8503CoreClasses::@4d875e53a28d04205b4e",
+					"jsonFile" : "target-CSC8503CoreClasses-Debug-fb784f9750632c38d294.json",
+					"name" : "CSC8503CoreClasses",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 2,
+					"id" : "NCLCoreClasses::@d19657c61aeecf4bdae3",
+					"jsonFile" : "target-NCLCoreClasses-Debug-0fe3decaf64072605414.json",
+					"name" : "NCLCoreClasses",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 4,
+					"id" : "OpenGLRendering::@33dc503a5a1af3fe7d7b",
+					"jsonFile" : "target-OpenGLRendering-Debug-3c4152bbdda194b11a01.json",
+					"name" : "OpenGLRendering",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 7,
+					"id" : "client::@39d0ae6511a0d9878f7b",
+					"jsonFile" : "target-client-Debug-60f96c0015d28a2a7b52.json",
+					"name" : "client",
+					"projectIndex" : 3
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "lua::@084f9cf436f5bfb3cc9c",
+					"jsonFile" : "target-lua-Debug-7be66f27a2483c627cd1.json",
+					"name" : "lua",
+					"projectIndex" : 1
+				},
+				{
+					"directoryIndex" : 6,
+					"id" : "server::@20a40c4b36ca103854cb",
+					"jsonFile" : "target-server-Debug-09c1ff283103873e82fe.json",
+					"name" : "server",
+					"projectIndex" : 2
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/cmake-build-debug-visual-studio",
+		"source" : "C:/Users/jdhyd/Documents/GitHub/gamestuff"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 4
+	}
+}

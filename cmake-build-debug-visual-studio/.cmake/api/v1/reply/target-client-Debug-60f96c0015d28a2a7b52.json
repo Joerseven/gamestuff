@@ -1,0 +1,660 @@
+{
+	"artifacts" : 
+	[
+		{
+			"path" : "Client/client.exe"
+		},
+		{
+			"path" : "Client/client.pdb"
+		}
+	],
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_executable",
+			"target_link_libraries",
+			"add_compile_definitions",
+			"include_directories",
+			"target_include_directories",
+			"target_precompile_headers"
+		],
+		"files" : 
+		[
+			"Client/CMakeLists.txt",
+			"CSC8503CoreClasses/CMakeLists.txt",
+			"OpenGLRendering/CMakeLists.txt",
+			"CSC8503/CMakeLists.txt",
+			"CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 4,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 9,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 10,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 11,
+				"parent" : 0
+			},
+			{
+				"command" : 1,
+				"file" : 0,
+				"line" : 12,
+				"parent" : 0
+			},
+			{
+				"file" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 211,
+				"parent" : 6
+			},
+			{
+				"file" : 2
+			},
+			{
+				"command" : 1,
+				"file" : 2,
+				"line" : 84,
+				"parent" : 8
+			},
+			{
+				"file" : 3
+			},
+			{
+				"command" : 1,
+				"file" : 3,
+				"line" : 203,
+				"parent" : 10
+			},
+			{
+				"file" : 4
+			},
+			{
+				"command" : 2,
+				"file" : 4,
+				"line" : 61,
+				"parent" : 12
+			},
+			{
+				"command" : 2,
+				"file" : 4,
+				"line" : 70,
+				"parent" : 12
+			},
+			{
+				"command" : 2,
+				"file" : 4,
+				"line" : 71,
+				"parent" : 12
+			},
+			{
+				"command" : 3,
+				"file" : 4,
+				"line" : 74,
+				"parent" : 12
+			},
+			{
+				"command" : 3,
+				"file" : 4,
+				"line" : 75,
+				"parent" : 12
+			},
+			{
+				"command" : 3,
+				"file" : 4,
+				"line" : 76,
+				"parent" : 12
+			},
+			{
+				"command" : 3,
+				"file" : 4,
+				"line" : 77,
+				"parent" : 12
+			},
+			{
+				"command" : 3,
+				"file" : 4,
+				"line" : 78,
+				"parent" : 12
+			},
+			{
+				"command" : 3,
+				"file" : 4,
+				"line" : 79,
+				"parent" : 12
+			},
+			{
+				"command" : 4,
+				"file" : 0,
+				"line" : 6,
+				"parent" : 0
+			},
+			{
+				"command" : 4,
+				"file" : 0,
+				"line" : 7,
+				"parent" : 0
+			},
+			{
+				"command" : 5,
+				"file" : 0,
+				"line" : 14,
+				"parent" : 0
+			}
+		]
+	},
+	"compileGroups" : 
+	[
+		{
+			"compileCommandFragments" : 
+			[
+				{
+					"fragment" : "/DWIN32 /D_WINDOWS /GR /EHsc /Zi /Ob0 /Od /RTC1 -MDd"
+				},
+				{
+					"fragment" : "-std:c++latest"
+				},
+				{
+					"fragment" : "/YcC:/Users/jdhyd/Documents/GitHub/gamestuff/cmake-build-debug-visual-studio/Client/CMakeFiles/client.dir/cmake_pch.hxx /FpC:/Users/jdhyd/Documents/GitHub/gamestuff/cmake-build-debug-visual-studio/Client/CMakeFiles/client.dir/./cmake_pch.cxx.pch /FIC:/Users/jdhyd/Documents/GitHub/gamestuff/cmake-build-debug-visual-studio/Client/CMakeFiles/client.dir/cmake_pch.hxx"
+				}
+			],
+			"defines" : 
+			[
+				{
+					"backtrace" : 13,
+					"define" : "ASSETROOTLOCATION=\"C:/Users/jdhyd/Documents/GitHub/gamestuff/Assets/\""
+				},
+				{
+					"backtrace" : 14,
+					"define" : "NOMINMAX"
+				},
+				{
+					"backtrace" : 15,
+					"define" : "WIN32_LEAN_AND_MEAN"
+				}
+			],
+			"includes" : 
+			[
+				{
+					"backtrace" : 16,
+					"path" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/CSC8503CoreClasses"
+				},
+				{
+					"backtrace" : 17,
+					"path" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/NCLCoreClasses"
+				},
+				{
+					"backtrace" : 18,
+					"path" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/OpenGLRendering"
+				},
+				{
+					"backtrace" : 19,
+					"path" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/CSC8503"
+				},
+				{
+					"backtrace" : 20,
+					"path" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/Replicated"
+				},
+				{
+					"backtrace" : 21,
+					"path" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/lua"
+				},
+				{
+					"backtrace" : 22,
+					"path" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/Client/."
+				},
+				{
+					"backtrace" : 23,
+					"path" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/Client/../Replicated"
+				}
+			],
+			"language" : "CXX",
+			"languageStandard" : 
+			{
+				"backtraces" : 
+				[
+					1
+				],
+				"standard" : "23"
+			},
+			"precompileHeaders" : 
+			[
+				{
+					"backtrace" : 24,
+					"header" : "<vector>"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "<map>"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "<stack>"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "<list>"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "<set>"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "<string>"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "<thread>"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "<atomic>"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "<functional>"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "<iostream>"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "<chrono>"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "<sstream>"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/Client/../NCLCoreClasses/Vector2i.h"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/Client/../NCLCoreClasses/Vector3i.h"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/Client/../NCLCoreClasses/Vector4i.h"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/Client/../NCLCoreClasses/Vector2.h"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/Client/../NCLCoreClasses/Vector3.h"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/Client/../NCLCoreClasses/Vector4.h"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/Client/../NCLCoreClasses/Quaternion.h"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/Client/../NCLCoreClasses/Plane.h"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/Client/../NCLCoreClasses/Matrix2.h"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/Client/../NCLCoreClasses/Matrix3.h"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/Client/../NCLCoreClasses/Matrix4.h"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/Client/../NCLCoreClasses/GameTimer.h"
+				}
+			],
+			"sourceIndexes" : 
+			[
+				0
+			]
+		},
+		{
+			"compileCommandFragments" : 
+			[
+				{
+					"fragment" : "/DWIN32 /D_WINDOWS /GR /EHsc /Zi /Ob0 /Od /RTC1 -MDd"
+				},
+				{
+					"fragment" : "-std:c++latest"
+				},
+				{
+					"fragment" : "/YuC:/Users/jdhyd/Documents/GitHub/gamestuff/cmake-build-debug-visual-studio/Client/CMakeFiles/client.dir/cmake_pch.hxx /FpC:/Users/jdhyd/Documents/GitHub/gamestuff/cmake-build-debug-visual-studio/Client/CMakeFiles/client.dir/./cmake_pch.cxx.pch /FIC:/Users/jdhyd/Documents/GitHub/gamestuff/cmake-build-debug-visual-studio/Client/CMakeFiles/client.dir/cmake_pch.hxx"
+				}
+			],
+			"defines" : 
+			[
+				{
+					"backtrace" : 13,
+					"define" : "ASSETROOTLOCATION=\"C:/Users/jdhyd/Documents/GitHub/gamestuff/Assets/\""
+				},
+				{
+					"backtrace" : 14,
+					"define" : "NOMINMAX"
+				},
+				{
+					"backtrace" : 15,
+					"define" : "WIN32_LEAN_AND_MEAN"
+				}
+			],
+			"includes" : 
+			[
+				{
+					"backtrace" : 16,
+					"path" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/CSC8503CoreClasses"
+				},
+				{
+					"backtrace" : 17,
+					"path" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/NCLCoreClasses"
+				},
+				{
+					"backtrace" : 18,
+					"path" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/OpenGLRendering"
+				},
+				{
+					"backtrace" : 19,
+					"path" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/CSC8503"
+				},
+				{
+					"backtrace" : 20,
+					"path" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/Replicated"
+				},
+				{
+					"backtrace" : 21,
+					"path" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/lua"
+				},
+				{
+					"backtrace" : 22,
+					"path" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/Client/."
+				},
+				{
+					"backtrace" : 23,
+					"path" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/Client/../Replicated"
+				}
+			],
+			"language" : "CXX",
+			"languageStandard" : 
+			{
+				"backtraces" : 
+				[
+					1
+				],
+				"standard" : "23"
+			},
+			"precompileHeaders" : 
+			[
+				{
+					"backtrace" : 24,
+					"header" : "<vector>"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "<map>"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "<stack>"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "<list>"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "<set>"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "<string>"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "<thread>"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "<atomic>"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "<functional>"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "<iostream>"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "<chrono>"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "<sstream>"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/Client/../NCLCoreClasses/Vector2i.h"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/Client/../NCLCoreClasses/Vector3i.h"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/Client/../NCLCoreClasses/Vector4i.h"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/Client/../NCLCoreClasses/Vector2.h"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/Client/../NCLCoreClasses/Vector3.h"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/Client/../NCLCoreClasses/Vector4.h"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/Client/../NCLCoreClasses/Quaternion.h"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/Client/../NCLCoreClasses/Plane.h"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/Client/../NCLCoreClasses/Matrix2.h"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/Client/../NCLCoreClasses/Matrix3.h"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/Client/../NCLCoreClasses/Matrix4.h"
+				},
+				{
+					"backtrace" : 24,
+					"header" : "C:/Users/jdhyd/Documents/GitHub/gamestuff/Client/../NCLCoreClasses/GameTimer.h"
+				}
+			],
+			"sourceIndexes" : 
+			[
+				1
+			]
+		}
+	],
+	"dependencies" : 
+	[
+		{
+			"backtrace" : 2,
+			"id" : "NCLCoreClasses::@d19657c61aeecf4bdae3"
+		},
+		{
+			"backtrace" : 3,
+			"id" : "CSC8503CoreClasses::@4d875e53a28d04205b4e"
+		},
+		{
+			"backtrace" : 4,
+			"id" : "OpenGLRendering::@33dc503a5a1af3fe7d7b"
+		},
+		{
+			"backtrace" : 5,
+			"id" : "CSC8503::@6219ac6a3c5e7ef5b3a0"
+		}
+	],
+	"id" : "client::@39d0ae6511a0d9878f7b",
+	"link" : 
+	{
+		"commandFragments" : 
+		[
+			{
+				"fragment" : "/DWIN32 /D_WINDOWS /GR /EHsc /Zi /Ob0 /Od /RTC1 -MDd",
+				"role" : "flags"
+			},
+			{
+				"fragment" : "/machine:X86 /debug /INCREMENTAL /subsystem:console",
+				"role" : "flags"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "NCLCoreClasses\\NCLCoreClasses.lib",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 3,
+				"fragment" : "C:\\Users\\jdhyd\\Documents\\GitHub\\gamestuff\\x64\\Debug\\CSC8503CoreClasses.lib",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 4,
+				"fragment" : "OpenGLRendering\\OpenGLRendering.lib",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 5,
+				"fragment" : "C:\\Users\\jdhyd\\Documents\\GitHub\\gamestuff\\x64\\Debug\\CSC8503.lib",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 3,
+				"fragment" : "C:\\Users\\jdhyd\\Documents\\GitHub\\gamestuff\\x64\\Debug\\CSC8503CoreClasses.lib",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 7,
+				"fragment" : "ws2_32.lib",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 4,
+				"fragment" : "OpenGLRendering\\OpenGLRendering.lib",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "NCLCoreClasses\\NCLCoreClasses.lib",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 9,
+				"fragment" : "opengl32.lib",
+				"role" : "libraries"
+			},
+			{
+				"backtrace" : 11,
+				"fragment" : "Winmm.lib",
+				"role" : "libraries"
+			},
+			{
+				"fragment" : "kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib",
+				"role" : "libraries"
+			}
+		],
+		"language" : "CXX"
+	},
+	"name" : "client",
+	"nameOnDisk" : "client.exe",
+	"paths" : 
+	{
+		"build" : "Client",
+		"source" : "Client"
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "Source Files",
+			"sourceIndexes" : 
+			[
+				0,
+				1
+			]
+		},
+		{
+			"name" : "Precompile Header File",
+			"sourceIndexes" : 
+			[
+				2
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 0,
+			"compileGroupIndex" : 0,
+			"path" : "cmake-build-debug-visual-studio/Client/CMakeFiles/client.dir/cmake_pch.cxx",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 1,
+			"path" : "Client/ClientGame.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 0,
+			"path" : "cmake-build-debug-visual-studio/Client/CMakeFiles/client.dir/cmake_pch.hxx",
+			"sourceGroupIndex" : 1
+		}
+	],
+	"type" : "EXECUTABLE"
+}

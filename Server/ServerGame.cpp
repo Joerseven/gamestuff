@@ -27,7 +27,7 @@ ServerGame::ServerGame() {
     lua_State *L = luaL_newstate();
     luaL_openlibs(L);
 
-    auto status = luaL_dofile(L, "../Assets/Data/Levels.lua");
+    auto status = luaL_dofile(L, ASSETROOTLOCATION "Data/Levels.lua");
 
     if (status) {
         std::cerr << "Lua file giga dead: " << lua_tostring(L, -1);

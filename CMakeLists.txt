@@ -76,6 +76,7 @@ include_directories(NCLCoreClasses)
 include_directories(OpenGLRendering)
 include_directories(CSC8503)
 include_directories(Replicated)
+include_directories(lua)
 
 ################################################################################
 # Sub-projects

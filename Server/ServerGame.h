@@ -15,12 +15,9 @@
 #include "NetworkObject.h"
 #include "PhysicsObject.h"
 #include "Replicated.h"
+#include "lutils.h"
 
-extern "C" {
-#include "lua.h"
-#include "lauxlib.h"
-#include "lualib.h"
-}
+#include <lua.hpp>
 
 #include <array>
 
