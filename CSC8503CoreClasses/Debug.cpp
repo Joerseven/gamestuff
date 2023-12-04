@@ -1,8 +1,10 @@
 #include "Debug.h"
 using namespace NCL;
+using namespace CSC8503;
 
 std::vector<Debug::DebugStringEntry>	Debug::stringEntries;
 std::vector<Debug::DebugLineEntry>		Debug::lineEntries;
+std::vector<Debug::DebugBoundingEntry>  Debug::boundingEntries;
 
 SimpleFont* Debug::debugFont = nullptr;
 
@@ -37,6 +39,17 @@ void Debug::DrawLine(const Vector3& startpoint, const Vector3& endpoint, const V
 	newEntry.time = time;
 
 	lineEntries.emplace_back(newEntry);
+}
+
+void Debug::DrawBoundingVolume(Transform *location, CollisionVolume* volume, const Vector4 &color, float time) {
+    DebugBoundingEntry newEntry;
+
+    newEntry.location = location;
+    newEntry.color = color;
+    newEntry.volume = volume;
+    newEntry.time = time;
+
+    boundingEntries.emplace_back(newEntry);
 }
 
 void Debug::DrawAxisLines(const Matrix4& modelMatrix, float scaleBoost, float time) {
@@ -88,4 +101,10 @@ const std::vector<Debug::DebugStringEntry>& Debug::GetDebugStrings() {
 
 const std::vector<Debug::DebugLineEntry>& Debug::GetDebugLines() {
 	return lineEntries;
+}
+
+
+
+const vector<Debug::DebugBoundingEntry> &Debug::GetDebugVolumes() {
+    return boundingEntries;
 }

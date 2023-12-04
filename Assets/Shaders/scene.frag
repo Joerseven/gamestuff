@@ -40,7 +40,7 @@ void main(void)
 	float rFactor = max (0.0 , dot ( halfDir , IN.normal ));
 	float sFactor = pow ( rFactor , 80.0 );
 	
-	vec4 albedo = IN.colour;
+	vec4 albedo = objectColour;
 	
 	if(hasTexture) {
 	 albedo *= texture(mainTex, IN.texCoord);

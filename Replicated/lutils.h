@@ -47,6 +47,28 @@ inline int getIntField(lua_State* L, const char* key) {
     return result;
 }
 
+inline double getNumberField(lua_State* L, const char* key) {
+    lua_pushstring(L, key);
+    lua_gettable(L, -2);
+    if (!lua_isnumber(L, -1)) {
+        luaL_error(L, "field is not an number");
+    }
+    auto result = lua_tonumber(L, -1);
+    lua_pop(L, 1);
+    return result;
+}
+
+inline bool getBool(lua_State* L, const char* key) {
+    lua_pushstring(L, key);
+    lua_gettable(L, -2);
+    if (!lua_isboolean(L, -1)) {
+        luaL_error(L, "field is not a boolean");
+    }
+    auto result = lua_toboolean(L, -1);
+    lua_pop(L, 1);
+    return result;
+}
+
 inline const char* getStringField(lua_State* L, const char* key) {
     lua_pushstring(L, key);
     lua_gettable(L, -2);
@@ -56,6 +78,32 @@ inline const char* getStringField(lua_State* L, const char* key) {
     auto result = lua_tostring(L, -1);
     lua_pop(L, 1);
     return result;
+}
+
+inline Vector3 getVec3Field(lua_State* L, const char* key) {
+    Vector3 v;
+    lua_pushstring(L, key);
+    lua_gettable(L, -2);
+    // -1 table -2 table
+    lua_pushstring(L, "x");
+    lua_gettable(L, -2);
+    v.x = (float)lua_tonumber(L, -1);
+    lua_pop(L, 1);
+
+    lua_pushstring(L, "y");
+    lua_gettable(L, -2);
+    v.y = (float)lua_tonumber(L, -1);
+    lua_pop(L, 1);
+
+    lua_pushstring(L, "z");
+    lua_gettable(L, -2);
+    v.z = (float)lua_tonumber(L, -1);
+    lua_pop(L, 1);
+
+    // Pop the vector table
+    lua_pop(L, 1);
+
+    return v;
 }
 
 inline int setIntField(lua_State* L,  const char* key, int value) {

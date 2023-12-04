@@ -20,7 +20,23 @@ ClientGame::ClientGame() : controller(*Window::GetWindow()->GetKeyboard(), *Wind
 
     NetworkBase::Initialise();
 
+    netIdCounter = 4;
+
     InitialiseAssets();
+
+    lua_State *L = luaL_newstate();
+    luaL_openlibs(L);
+
+    auto status = luaL_dofile(L, ASSETROOTLOCATION "Data/Levels.lua");
+
+    if (status) {
+        std::cerr << "Lua file giga dead: " << lua_tostring(L, -1);
+        exit(1);
+    }
+
+    LoadLevel(L, 1);
+
+    lua_close(L);
 
     StartAsClient(127, 0, 0, 1);
 }
@@ -45,6 +61,65 @@ void ClientGame::UpdateGame(float dt) {
     //Debug::UpdateRenderables(dt);
 }
 
+void ClientGame::LoadLevel(lua_State *L, int level) {
+    lua_getglobal(L, "levels");
+    lua_pushnumber(L, level);
+    lua_gettable(L, -2);
+
+    lua_pushnil(L);
+    while (lua_next(L, -2)) {
+        std::cout << lua_typename(L, lua_type(L, -2)) << lua_typename(L, lua_type(L, -1)) << std::endl;
+        AddObjectFromLua(L);
+        lua_pop(L, 1);
+    }
+}
+
+void ClientGame::AddObjectFromLua(lua_State *L) {
+    // object table is on top of the stack
+    GameObject* g = new GameObject();
+    g->SetActive(getBool(L, "active"));
+    Vector3 size = getVec3Field(L, "size");
+    Vector3 position = getVec3Field(L, "position");
+
+    g->GetTransform()
+            .SetPosition(position)
+            .SetScale(size);
+
+    auto volume = getStringField(L, "bounding");
+    AddVolume(g, std::string(volume), L);
+
+    if (getBool(L, "network")) {
+        g->SetNetworkObject(new NetworkObject(*g, ++netIdCounter));
+    }
+
+    auto t = getStringField(L, "texture");
+
+    g->SetRenderObject(new RenderObject(&g->GetTransform(),
+                                        GetMesh(getStringField(L, "mesh")),
+                                        std::string(t) == std::string("none") ? nullptr : GetTexture(t),
+                                        GetShader(getStringField(L, "shader"))));
+
+
+
+    Debug::DrawBoundingVolume(&g->GetTransform(), const_cast<CollisionVolume *>(g->GetBoundingVolume()), Vector4(1.0, 0.5, 0.2, 1.0));
+
+    world->AddGameObject(g);
+}
+
+void ClientGame::AddVolume(GameObject* g, const std::string& volumeType, lua_State *L) {
+    if ("SphereVolume" == volumeType) {
+        auto size = getNumberField(L, "boundingSize");
+        auto volume  = new SphereVolume(size);
+        g->SetBoundingVolume((CollisionVolume*)volume);
+    }
+
+    if ("AABBVolume" == volumeType) {
+        auto size = getVec3Field(L, "boundingSize");
+        auto volume = new AABBVolume(size);
+        g->SetBoundingVolume((CollisionVolume*)volume);
+    }
+}
+
 void ClientGame::StartAsClient(char a, char b, char c, char d) {
     thisClient = new GameClient();
     thisClient->Connect(a, b, c, d, NetworkBase::GetDefaultPort());
@@ -65,12 +140,6 @@ void ClientGame::StartAsClient(char a, char b, char c, char d) {
 }
 
 void ClientGame::InitialiseAssets() {
-    cubeMesh	= renderer->LoadMesh("cube.msh");
-    sphereMesh	= renderer->LoadMesh("sphere.msh");
-    charMesh	= renderer->LoadMesh("goat.msh");
-
-    basicTex	= renderer->LoadTexture("checkerboard.png");
-    basicShader = renderer->LoadShader("scene.vert", "scene.frag");
 
     InitCamera();
     InitWorld();
@@ -98,25 +167,6 @@ void ClientGame::UpdateKeys() {
 
 void ClientGame::InitWorld() {
     world->ClearAndErase();
-    AddFloorToWorld({0, -20, 0});
-}
-
-GameObject* ClientGame::AddFloorToWorld(const Vector3& position) {
-    GameObject* floor = new GameObject();
-
-    Vector3 floorSize = Vector3(200, 2, 200);
-    AABBVolume* volume = new AABBVolume(floorSize);
-    floor->SetBoundingVolume((CollisionVolume*)volume);
-    floor->GetTransform()
-            .SetScale(floorSize * 2)
-            .SetPosition(position);
-
-    floor->SetRenderObject(new RenderObject(&floor->GetTransform(), cubeMesh, basicTex, basicShader));
-
-
-    world->AddGameObject(floor);
-
-    return floor;
 }
 
 void ClientGame::ReceivePacket(int type, GamePacket *payload, int source) {
@@ -143,12 +193,44 @@ void ClientGame::AddPlayerObjects(const Vector3 &position) {
                 .SetPosition(position);
 
         character->SetNetworkObject(new NetworkObject(*character, i));
-        character->SetRenderObject(new RenderObject(&character->GetTransform(), charMesh, nullptr, basicShader));
+        character->SetRenderObject(new RenderObject(&character->GetTransform(), GetMesh("Goat"), nullptr, GetShader("scene")));
         netObjects[i] = character->GetNetworkObject();
         character->SetActive(false);
 
+        Debug::DrawBoundingVolume(&character->GetTransform(), (CollisionVolume*)volume, Vector4(1.0, 0.5, 0.2, 1.0));
+
         world->AddGameObject(character);
     }
+}
+
+Texture *ClientGame::GetTexture(const std::string &texture) {
+    if (textures.find(texture) == textures.end()) {
+        auto p = renderer->LoadTexture(texture + std::string(".png"));
+        textures.insert(std::make_pair(texture, p));
+        return p;
+    }
+
+    return textures[texture];
+}
+
+Mesh *ClientGame::GetMesh(const std::string &mesh) {
+    if (meshes.find(mesh) == meshes.end()) {
+        auto p = renderer->LoadMesh(mesh + std::string(".msh"));
+        meshes.insert(std::make_pair(mesh, p));
+        return p;
+    }
+
+    return meshes[mesh];
+}
+
+Shader *ClientGame::GetShader(const std::string &shader) {
+    if (shaders.find(shader) == shaders.end()) {
+        auto p = renderer->LoadShader(shader + std::string(".vert"), shader + std::string(".frag"));
+        shaders.insert(std::make_pair(shader, p));
+        return p;
+    }
+
+    return shaders[shader];
 }
 
 int main() {

@@ -38,6 +38,8 @@ namespace NCL {
 			void RenderCamera(); 
 			void RenderSkybox();
 
+            void RenderDebugVolumes();
+
 			void LoadSkybox();
 
 			void SetDebugStringBufferSizes(size_t newVertCount);
@@ -49,6 +51,11 @@ namespace NCL {
 			OGLShader*  skyboxShader;
 			OGLMesh*	skyboxMesh;
 			GLuint		skyboxTex;
+
+            OGLShader* sceneShader;
+
+            Mesh* cubeMesh;
+            Mesh* sphereMesh;
 
 			//shadow mapping things
 			OGLShader*	shadowShader;

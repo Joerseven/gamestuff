@@ -18,11 +18,13 @@ ServerGame::ServerGame() {
 
     forceMagnitude = 10.0f;
     timeToNextPacket  = 0.0f;
-    netIdCounter = 0;
+    netIdCounter = 4;
 
     physics->UseGravity(true);
 
     ClearPlayers();
+
+    AddPlayerObjects(Vector3(0,0,0));
 
     lua_State *L = luaL_newstate();
     luaL_openlibs(L);
@@ -34,9 +36,9 @@ ServerGame::ServerGame() {
         exit(1);
     }
 
-    lua_close(L);
+    LoadLevel(L, 1);
 
-    InitWorld();
+    lua_close(L);
 
 }
 
@@ -87,8 +89,7 @@ void ServerGame::BroadcastSnapshot() {
     }
 }
 
-void ServerGame::InitWorld() {
-    AddFloorToWorld({0, -20, 0});
+void ServerGame::InitWorld(lua_State *L) {
     AddPlayerObjects({0,0,0});
 }
 
@@ -136,6 +137,62 @@ void ServerGame::PlayerLeft(int peerId) {
 
     std::cout << "Player removed successfully" << std::endl;
 
+}
+
+
+
+void ServerGame::LoadLevel(lua_State *L, int level) {
+    lua_getglobal(L, "levels");
+    lua_pushnumber(L, level);
+    lua_gettable(L, -2);
+
+    lua_pushnil(L);
+    while (lua_next(L, -2)) {
+        std::cout << lua_typename(L, lua_type(L, -2)) << lua_typename(L, lua_type(L, -1)) << std::endl;
+        AddObjectFromLua(L);
+        lua_pop(L, 1);
+    }
+}
+
+void ServerGame::AddObjectFromLua(lua_State *L) {
+    // object table is on top of the stack
+    GameObject* g = new GameObject();
+    g->SetActive(getBool(L, "active"));
+    Vector3 size = getVec3Field(L, "size");
+    Vector3 position = getVec3Field(L, "position");
+
+    g->GetTransform()
+            .SetPosition(position)
+            .SetScale(size);
+
+    auto volumeType = getStringField(L, "bounding");
+    AddVolume(g, volumeType, L);
+
+    if (getBool(L, "network")) {
+        g->SetNetworkObject(new NetworkObject(*g, ++netIdCounter));
+    }
+
+    world->AddGameObject(g);
+}
+
+void ServerGame::AddVolume(GameObject* g, const std::string& volumeType, lua_State *L) {
+    if ("SphereVolume" == volumeType) {
+        auto size = getNumberField(L, "boundingSize");
+        auto volume  = new SphereVolume(size);
+        g->SetBoundingVolume((CollisionVolume*)volume);
+        g->SetPhysicsObject(new PhysicsObject(&g->GetTransform(), g->GetBoundingVolume()));
+        g->GetPhysicsObject()->SetInverseMass(getNumberField(L, "mass"));
+        g->GetPhysicsObject()->InitSphereInertia();
+    }
+
+    if ("AABBVolume" == volumeType) {
+        auto size = getVec3Field(L, "boundingSize");
+        auto volume = new AABBVolume(size);
+        g->SetBoundingVolume((CollisionVolume*)volume);
+        g->SetPhysicsObject(new PhysicsObject(&g->GetTransform(), g->GetBoundingVolume()));
+        g->GetPhysicsObject()->SetInverseMass(getNumberField(L, "mass"));
+        g->GetPhysicsObject()->InitCubeInertia();
+    }
 }
 
 

@@ -30,7 +30,7 @@ public:
     ~ServerGame();
 
     void UpdateGame(float dt);
-    void InitWorld();
+    void InitWorld(lua_State *L);
     void ReceivePacket(int type, GamePacket* payload, int source) override;
 
 protected:
@@ -50,6 +50,8 @@ protected:
 
     GameObject *AddFloorToWorld(const Vector3 &position);
     void AddPlayerObjects(const Vector3 &position);
+    void AddObjectFromLua(lua_State *L);
+    void AddVolume(GameObject* g, const std::string& volumeType, lua_State *L);
 
     GameObject *CreatePlayer(int peerId);
     void PlayerLeft(int peerId);
@@ -58,6 +60,7 @@ protected:
     std::map<int, int> playerMap;
     int playersJoined = 0;
 
+    void LoadLevel(lua_State *L, int level);
 };
 
 

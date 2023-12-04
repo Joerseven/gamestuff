@@ -10,6 +10,7 @@ target_link_libraries(${PROJECT_NAME} LINK_PUBLIC NCLCoreClasses)
 target_link_libraries(${PROJECT_NAME} LINK_PUBLIC CSC8503CoreClasses)
 target_link_libraries(${PROJECT_NAME} LINK_PUBLIC OpenGLRendering)
 target_link_libraries(${PROJECT_NAME} LINK_PUBLIC CSC8503)
+target_link_libraries(${PROJECT_NAME} LINK_PUBLIC lua)
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE
         <vector>

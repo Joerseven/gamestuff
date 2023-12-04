@@ -22,6 +22,7 @@ GameTechRenderer::GameTechRenderer(GameWorld& world) : OGLRenderer(*Window::GetW
 
 	debugShader  = new OGLShader("debug.vert", "debug.frag");
 	shadowShader = new OGLShader("shadow.vert", "shadow.frag");
+    sceneShader = new OGLShader("scene.vert", "scene.frag");
 
 	glGenTextures(1, &shadowTex);
 	glBindTexture(GL_TEXTURE_2D, shadowTex);
@@ -47,6 +48,9 @@ GameTechRenderer::GameTechRenderer(GameWorld& world) : OGLRenderer(*Window::GetW
 	lightColour = Vector4(0.8f, 0.8f, 0.5f, 1.0f);
 	lightRadius = 1000.0f;
 	lightPosition = Vector3(-200.0f, 60.0f, -200.0f);
+
+    cubeMesh = LoadMesh("Cube.msh");
+    sphereMesh = LoadMesh("Sphere.msh");
 
 	//Skybox!
 	skyboxShader = new OGLShader("skybox.vert", "skybox.frag");
@@ -130,6 +134,7 @@ void GameTechRenderer::RenderFrame() {
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	NewRenderLines();
 	NewRenderText();
+    RenderDebugVolumes();
 	glDisable(GL_BLEND);
 	glEnable(GL_DEPTH_TEST);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -300,6 +305,72 @@ void GameTechRenderer::RenderCamera() {
 			DrawBoundMesh((uint32_t)i);
 		}
 	}
+
+    BindShader(*sceneShader);
+
+    projLocation	= glGetUniformLocation(sceneShader->GetProgramID(), "projMatrix");
+    viewLocation	= glGetUniformLocation(sceneShader->GetProgramID(), "viewMatrix");
+    modelLocation	= glGetUniformLocation(sceneShader->GetProgramID(), "modelMatrix");
+    shadowLocation  = glGetUniformLocation(sceneShader->GetProgramID(), "shadowMatrix");
+    colourLocation  = glGetUniformLocation(sceneShader->GetProgramID(), "objectColour");
+    hasVColLocation = glGetUniformLocation(sceneShader->GetProgramID(), "hasVertexColours");
+    hasTexLocation  = glGetUniformLocation(sceneShader->GetProgramID(), "hasTexture");
+
+    lightPosLocation	= glGetUniformLocation(sceneShader->GetProgramID(), "lightPos");
+    lightColourLocation = glGetUniformLocation(sceneShader->GetProgramID(), "lightColour");
+    lightRadiusLocation = glGetUniformLocation(sceneShader->GetProgramID(), "lightRadius");
+
+    cameraLocation = glGetUniformLocation(sceneShader->GetProgramID(), "cameraPos");
+
+    glUniformMatrix4fv(projLocation, 1, false, (float*)&projMatrix);
+    glUniformMatrix4fv(viewLocation, 1, false, (float*)&viewMatrix);
+
+    glUniform3fv(lightPosLocation	, 1, (float*)&lightPosition);
+    glUniform4fv(lightColourLocation, 1, (float*)&lightColour);
+    glUniform1f(lightRadiusLocation , lightRadius);
+
+    int shadowTexLocation = glGetUniformLocation(sceneShader->GetProgramID(), "shadowTex");
+    glUniform1i(shadowTexLocation, 1);
+
+    activeShader = sceneShader;
+
+    for (const auto& b : Debug::GetDebugVolumes()) {
+        auto prevScale = b.location->GetScale();
+        Vector3 newScale;
+        if (b.volume->type == VolumeType::AABB) {
+            newScale = ((AABBVolume*)b.volume)->GetHalfDimensions();
+        } else {
+            auto sf = ((SphereVolume*)b.volume)->GetRadius();
+            newScale = Vector3(sf, sf, sf);
+        }
+        auto modelMatrix = b.location->SetScale(newScale).GetMatrix();
+        b.location->SetScale(prevScale);
+        glUniformMatrix4fv(modelLocation, 1, false, (float*)&modelMatrix);
+
+        Matrix4 fullShadowMat = shadowMatrix * modelMatrix;
+        glUniformMatrix4fv(shadowLocation, 1, false, (float*)&fullShadowMat);
+
+        Vector4 colour = b.color;
+        glUniform4fv(colourLocation, 1, &colour.x);
+
+        glUniform1i(hasTexLocation, 0);
+
+        size_t layerCount;
+
+        if (b.volume->type == VolumeType::AABB) {
+            BindMesh((OGLMesh&)*cubeMesh);
+            layerCount = cubeMesh->GetSubMeshCount();
+        } else {
+            BindMesh((OGLMesh&)*sphereMesh);
+            layerCount = sphereMesh->GetSubMeshCount();
+        }
+
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        for (size_t i = 0; i < layerCount; ++i) {
+            DrawBoundMesh((uint32_t)i);
+        }
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
 }
 
 Mesh* GameTechRenderer::LoadMesh(const std::string& name) {
@@ -426,6 +497,10 @@ void GameTechRenderer::NewRenderLines() {
 	glBindVertexArray(lineVAO);
 	glDrawArrays(GL_LINES, 0, (GLsizei)frameLineCount);
 	glBindVertexArray(0);
+}
+
+void GameTechRenderer::RenderDebugVolumes() {
+
 }
 
 void GameTechRenderer::NewRenderText() {

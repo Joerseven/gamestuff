@@ -14,6 +14,8 @@
 #include "GameClient.h"
 #include "Replicated.h"
 #include "NetworkObject.h"
+#include "lutils.h"
+#include <lua.hpp>
 
 using namespace NCL;
 using namespace CSC8503;
@@ -30,21 +32,31 @@ protected:
     void InitCamera();
     void UpdateKeys();
     void InitWorld();
+    void LoadLevel(lua_State *L, int level);
+
+    void AddObjectFromLua(lua_State *L);
+    void AddVolume(GameObject* g, const std::string& volumeType, lua_State *L);
+
+    Texture* GetTexture(const std::string& texture);
+    Mesh* GetMesh(const std::string& mesh);
+    Shader* GetShader(const std::string& shader);
+
+    int netIdCounter = 0;
 
     GameTechRenderer* renderer;
     GameWorld* world;
     KeyboardMouseController controller;
     GameClient* thisClient;
 
-    Mesh *cubeMesh = nullptr;
-    Mesh *sphereMesh = nullptr;
-    Mesh *charMesh = nullptr;
-
     Texture* basicTex = nullptr;
     Texture* assetColorMap = nullptr;
     Shader* basicShader = nullptr;
 
-    GameObject *AddFloorToWorld(const Vector3& position);
+    std::unordered_map<std::string, Texture*> textures;
+    std::unordered_map<std::string, Mesh*> meshes;
+    std::unordered_map<std::string, Shader*> shaders;
+
+    //GameObject *AddFloorToWorld(const Vector3& position);
     void AddPlayerObjects(const Vector3& position);
 
     void StartAsClient(char a, char b, char c, char d);
