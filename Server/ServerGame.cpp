@@ -22,7 +22,7 @@ ServerGame::ServerGame() {
     timeToNextPacket  = 0.0f;
     netIdCounter = 4;
 
-    physics->UseGravity(true);
+    physics->UseGravity(false);
 
     ClearPlayers();
 
@@ -108,6 +108,17 @@ void ServerGame::ReceivePacket(int type, GamePacket *payload, int source) {
         auto id = ((ServerMessagePacket*)payload)->messageID;
         if (id == Player_Loaded) {
             CreatePlayer(source);
+        }
+    }
+    if (type == Received_State) {
+        auto exists = playerMap.find(source) != playerMap.end();
+        if (exists) {
+            auto pressed = ((ClientPacket*)payload)->buttonstates;
+            float mag = 100.0f;
+            players[playerMap[source]]->GetPhysicsObject()->AddForce(Vector3(
+                    (float)pressed[3] * mag + (float)pressed[1] * mag * -1,
+                    0,
+                    (float)pressed[2] * mag + (float)pressed[0] * mag * -1));
         }
     }
 }

@@ -5,50 +5,6 @@
 #include "ClientGame.h"
 #include "Window.h"
 
-GameObject* theFloor;
-
-class TweenManager {
-
-    struct TweenInfo {
-        Transform original;
-        Transform target;
-        Transform* current;
-        float duration;
-        float elapsed;
-    };
-
-    void Create(Transform* character, const Transform& target, float duration) {
-        TweenInfo t;
-        t.original = Transform(*character);
-        t.current = character;
-        t.target = target;
-        t.duration = duration;
-        t.elapsed = 0.0f;
-        // Must be an easier way to do this
-        if (tweens.find(character) == tweens.end()) {
-            tweens.insert(std::make_pair(character, t));
-        } else {
-            tweens[character] = t;
-        }
-    }
-
-    void Update(float dt) {
-        for (auto it = tweens.begin(); it != tweens.end();) {
-            auto& v = it->second;
-            v.elapsed += dt;
-            if (v.elapsed >= v.duration) {
-                *(v.current) = v.target;
-                tweens.erase(it++);
-            } else {
-                v.current->SetPosition(Vector3::Lerp(v.original.GetPosition(), v.target.GetPosition(), v.elapsed / v.duration));
-                v.current->SetOrientation(Quaternion::Slerp(v.original.GetOrientation(), v.target.GetOrientation(), v.elapsed / v.duration));
-                it++;
-            }
-        }
-    }
-    
-    std::unordered_map<Transform*, TweenInfo> tweens;
-};
 
 ClientGame::ClientGame() : controller(*Window::GetWindow()->GetKeyboard(), *Window::GetWindow()->GetMouse()) {
     world = new GameWorld();
@@ -83,27 +39,29 @@ ClientGame::ClientGame() : controller(*Window::GetWindow()->GetKeyboard(), *Wind
 
     lua_close(L);
 
+    tweenManager = new TweenManager();
+
     StartAsClient(127, 0, 0, 1);
 }
 
 ClientGame::~ClientGame() {
     delete world;
     delete renderer;
+    delete tweenManager;
 }
 
 void ClientGame::UpdateGame(float dt) {
-    UpdateKeys();
+    GetClientInput();
 
     world->GetMainCamera().UpdateCamera(dt);
 
     //Debug::DrawLine(Vector3(500, 0, 500), Vector3(500, 100, 500), Vector4(1, 0, 0, 1));
 
     world->UpdateWorld(dt);
-    renderer->Update(dt);
 
-    if (theFloor) {
-        std::cout << theFloor->GetTransform().GetPosition() << "\n" << theFloor->GetTransform().GetScale() << std::endl;
-    }
+    tweenManager->Update(dt);
+
+    renderer->Update(dt);
 
     renderer->Render();
     thisClient->UpdateClient();
@@ -147,8 +105,6 @@ void ClientGame::AddObjectFromLua(lua_State *L) {
                                         GetMesh(getStringField(L, "mesh")),
                                         std::string(t) == std::string("none") ? nullptr : GetTexture(t),
                                         GetShader(getStringField(L, "shader"))));
-
-    theFloor = g;
 
 
 
@@ -222,7 +178,7 @@ void ClientGame::InitWorld() {
 
 void ClientGame::ReceivePacket(int type, GamePacket *payload, int source) {
     if (type == Full_State) {
-        netObjects[((FullPacket*)payload)->objectID]->ReadPacket(*payload);
+        netObjects[((FullPacket*)payload)->objectID]->ReadPacket(*payload, tweenManager);
     }
 }
 
@@ -282,6 +238,32 @@ Shader *ClientGame::GetShader(const std::string &shader) {
     }
 
     return shaders[shader];
+}
+
+void ClientGame::GetClientInput() {
+    ClientPacket newPacket;
+
+    for (size_t s = 0; s < 8; s++) {
+        newPacket.buttonstates[s] = 0;
+    }
+
+    if (Window::GetKeyboard()->KeyDown(KeyCodes::UP)) {
+        newPacket.buttonstates[0] = 1;
+    }
+
+    if (Window::GetKeyboard()->KeyDown(KeyCodes::LEFT)) {
+        newPacket.buttonstates[1] = 1;
+    }
+
+    if (Window::GetKeyboard()->KeyDown(KeyCodes::DOWN)) {
+        newPacket.buttonstates[2] = 1;
+    }
+
+    if (Window::GetKeyboard()->KeyDown(KeyCodes::RIGHT)) {
+        newPacket.buttonstates[3] = 1;
+    }
+
+    thisClient->SendPacket(newPacket);
 }
 
 int main() {

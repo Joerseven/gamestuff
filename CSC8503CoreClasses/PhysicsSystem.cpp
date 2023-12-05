@@ -245,6 +245,10 @@ void PhysicsSystem::ImpulseResolveCollision(GameObject& a, GameObject& b, Collis
 
     float cRestitution = 0.66f;
 
+    if (contactVelocity.Length() < 4.0f) {
+        cRestitution = 0.0f;
+    }
+
     float j = ( -(1.0f + cRestitution) * impulseForce) / (totalMass + angularEffect);
 
     Vector3 fullImpulse = p.normal * j;

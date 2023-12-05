@@ -14,8 +14,6 @@ Vector3.__tostring = function(vec)
 end
 
 Vector3.__mul = function(vec, scale)
-    --print(vec)
-    --print(scale)
     local new = Vector3:new(vec.x * scale, vec.y * scale, vec.z * scale)
     return new
 end
@@ -54,5 +52,6 @@ end
 levels = {
     [1] = {
         CreateFloor(),
+
     }
 }

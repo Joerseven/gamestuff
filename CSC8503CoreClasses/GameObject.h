@@ -98,3 +98,5 @@ namespace NCL::CSC8503 {
 	};
 }
 
+using namespace NCL::CSC8503;
+

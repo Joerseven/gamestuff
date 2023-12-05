@@ -2,6 +2,7 @@
 #include "GameObject.h"
 #include "NetworkBase.h"
 #include "NetworkState.h"
+#include "TweenManager.h"
 
 namespace NCL::CSC8503 {
 	class GameObject;
@@ -44,7 +45,7 @@ namespace NCL::CSC8503 {
 		virtual ~NetworkObject();
 
 		//Called by clients
-		virtual bool ReadPacket(GamePacket& p);
+		virtual bool ReadPacket(GamePacket& p, TweenManager* tweenManager);
 		//Called by servers
 		virtual bool WritePacket(GamePacket** p, bool deltaFrame, int stateID);
 
@@ -57,7 +58,7 @@ namespace NCL::CSC8503 {
 		bool GetNetworkState(int frameID, NetworkState& state);
 
 		virtual bool ReadDeltaPacket(DeltaPacket &p);
-		virtual bool ReadFullPacket(FullPacket &p);
+		virtual bool ReadFullPacket(FullPacket &p, TweenManager* tweenManager);
 
 		virtual bool WriteDeltaPacket(GamePacket**p, int stateID);
 		virtual bool WriteFullPacket(GamePacket**p);

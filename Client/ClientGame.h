@@ -16,6 +16,7 @@
 #include "NetworkObject.h"
 #include "lutils.h"
 #include <lua.hpp>
+#include "TweenManager.h"
 
 using namespace NCL;
 using namespace CSC8503;
@@ -32,6 +33,7 @@ protected:
     void InitCamera();
     void UpdateKeys();
     void InitWorld();
+    void GetClientInput();
     void LoadLevel(lua_State *L, int level);
 
     void AddObjectFromLua(lua_State *L);
@@ -55,6 +57,8 @@ protected:
     std::unordered_map<std::string, Texture*> textures;
     std::unordered_map<std::string, Mesh*> meshes;
     std::unordered_map<std::string, Shader*> shaders;
+
+    TweenManager* tweenManager;
 
     //GameObject *AddFloorToWorld(const Vector3& position);
     void AddPlayerObjects(const Vector3& position);
