@@ -5,6 +5,51 @@
 #include "ClientGame.h"
 #include "Window.h"
 
+GameObject* theFloor;
+
+class TweenManager {
+
+    struct TweenInfo {
+        Transform original;
+        Transform target;
+        Transform* current;
+        float duration;
+        float elapsed;
+    };
+
+    void Create(Transform* character, const Transform& target, float duration) {
+        TweenInfo t;
+        t.original = Transform(*character);
+        t.current = character;
+        t.target = target;
+        t.duration = duration;
+        t.elapsed = 0.0f;
+        // Must be an easier way to do this
+        if (tweens.find(character) == tweens.end()) {
+            tweens.insert(std::make_pair(character, t));
+        } else {
+            tweens[character] = t;
+        }
+    }
+
+    void Update(float dt) {
+        for (auto it = tweens.begin(); it != tweens.end();) {
+            auto& v = it->second;
+            v.elapsed += dt;
+            if (v.elapsed >= v.duration) {
+                *(v.current) = v.target;
+                tweens.erase(it++);
+            } else {
+                v.current->SetPosition(Vector3::Lerp(v.original.GetPosition(), v.target.GetPosition(), v.elapsed / v.duration));
+                v.current->SetOrientation(Quaternion::Slerp(v.original.GetOrientation(), v.target.GetOrientation(), v.elapsed / v.duration));
+                it++;
+            }
+        }
+    }
+    
+    std::unordered_map<Transform*, TweenInfo> tweens;
+};
+
 ClientGame::ClientGame() : controller(*Window::GetWindow()->GetKeyboard(), *Window::GetWindow()->GetMouse()) {
     world = new GameWorld();
     renderer = new GameTechRenderer(*world);
@@ -56,6 +101,10 @@ void ClientGame::UpdateGame(float dt) {
     world->UpdateWorld(dt);
     renderer->Update(dt);
 
+    if (theFloor) {
+        std::cout << theFloor->GetTransform().GetPosition() << "\n" << theFloor->GetTransform().GetScale() << std::endl;
+    }
+
     renderer->Render();
     thisClient->UpdateClient();
     //Debug::UpdateRenderables(dt);
@@ -99,9 +148,11 @@ void ClientGame::AddObjectFromLua(lua_State *L) {
                                         std::string(t) == std::string("none") ? nullptr : GetTexture(t),
                                         GetShader(getStringField(L, "shader"))));
 
+    theFloor = g;
 
 
-    Debug::DrawBoundingVolume(&g->GetTransform(), const_cast<CollisionVolume *>(g->GetBoundingVolume()), Vector4(1.0, 0.5, 0.2, 1.0));
+
+    //Debug::DrawBoundingVolume(&g->GetTransform(), const_cast<CollisionVolume *>(g->GetBoundingVolume()), Vector4(1.0, 0.5, 0.2, 1.0));
 
     world->AddGameObject(g);
 }
@@ -197,7 +248,7 @@ void ClientGame::AddPlayerObjects(const Vector3 &position) {
         netObjects[i] = character->GetNetworkObject();
         character->SetActive(false);
 
-        Debug::DrawBoundingVolume(&character->GetTransform(), (CollisionVolume*)volume, Vector4(1.0, 0.5, 0.2, 1.0));
+        //Debug::DrawBoundingVolume(&character->GetTransform(), (CollisionVolume*)volume, Vector4(1.0, 0.5, 0.2, 1.0));
 
         world->AddGameObject(character);
     }

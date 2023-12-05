@@ -5,6 +5,8 @@
 #ifndef CSC8503_REPLICATED_H
 #define CSC8503_REPLICATED_H
 
+const float SERVERHERTZ = 1.0f / 20.0f;
+
 struct ServerMessagePacket : public GamePacket {
     short messageID;
     ServerMessagePacket() {

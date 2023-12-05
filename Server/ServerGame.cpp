@@ -4,6 +4,8 @@
 
 #include "ServerGame.h"
 
+GameObject* moreTheFloor;
+
 ServerGame::ServerGame() {
 
     NetworkBase::Initialise();
@@ -55,11 +57,12 @@ void ServerGame::UpdateGame(float dt) {
     timeToNextPacket -= dt;
     if (timeToNextPacket < 0) {
         BroadcastSnapshot();
-        timeToNextPacket += 1.0f / 20.0f;
+        timeToNextPacket += SERVERHERTZ;
     }
 
     world->UpdateWorld(dt);
     physics->Update(dt);
+
 }
 
 void ServerGame::BroadcastSnapshot() {
@@ -139,8 +142,6 @@ void ServerGame::PlayerLeft(int peerId) {
 
 }
 
-
-
 void ServerGame::LoadLevel(lua_State *L, int level) {
     lua_getglobal(L, "levels");
     lua_pushnumber(L, level);
@@ -171,6 +172,8 @@ void ServerGame::AddObjectFromLua(lua_State *L) {
     if (getBool(L, "network")) {
         g->SetNetworkObject(new NetworkObject(*g, ++netIdCounter));
     }
+
+    moreTheFloor = g;
 
     world->AddGameObject(g);
 }

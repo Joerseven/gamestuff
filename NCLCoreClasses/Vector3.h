@@ -61,6 +61,10 @@ namespace NCL::Maths {
 			return v;
 		}
 
+		static Vector3 Lerp(const Vector3& v1, const Vector3& v2, float t) {
+			return v1 - (v2 - v1) * t;
+		}
+
 		constexpr float		GetMaxElement() const {
 			float v = x;
 			v = std::max(v, y);

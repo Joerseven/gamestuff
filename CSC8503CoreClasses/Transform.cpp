@@ -34,3 +34,10 @@ Transform& Transform::SetOrientation(const Quaternion& worldOrientation) {
 	UpdateMatrix();
 	return *this;
 }
+
+Transform::Transform(const Transform &t) {
+    position = t.position;
+    scale = t.scale;
+    orientation = t.orientation;
+    UpdateMatrix();
+}

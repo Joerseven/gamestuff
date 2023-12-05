@@ -9,8 +9,15 @@ function Vector3:new(x, y, z)
     return v
 end
 
+Vector3.__tostring = function(vec)
+    return vec.x .. vec.y .. vec.z
+end
+
 Vector3.__mul = function(vec, scale)
-    return Vector3:new(vec.x * scale, vec.y * scale, vec.z * scale)
+    --print(vec)
+    --print(scale)
+    local new = Vector3:new(vec.x * scale, vec.y * scale, vec.z * scale)
+    return new
 end
 
 local base = {
@@ -36,11 +43,10 @@ end
 
 local function CreateFloor()
     local floor = CreateObject()
-    floor.boundingSize = Vector3:new(200, 2, 200);
-    floor.size = floor.boundingSize * 2
+    floor.size = Vector3:new(200, 2, 200);
+    floor.boundingSize = floor.size * 0.5
     floor.position = Vector3:new(0, -20, 0)
     floor.bounding = "AABBVolume"
-    floor.boundingSize = floor.size;
     floor.texture = "checkerboard"
     return floor
 end
