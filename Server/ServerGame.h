@@ -15,12 +15,10 @@
 #include "NetworkObject.h"
 #include "PhysicsObject.h"
 #include "Replicated.h"
-#include "lutils.h"
 #include <algorithm>
-
 #include <lua.hpp>
-
 #include <array>
+#include "lutils.h"
 
 using namespace NCL;
 using namespace CSC8503;
@@ -62,6 +60,9 @@ protected:
     std::map<int, int> playerMap;
     std::map<int, std::array<char, 8>> playerControls;
     int playersJoined = 0;
+    bool shouldJump = false;
+
+    int sentPackets = 0;
 
     void LoadLevel(lua_State *L, int level);
 };

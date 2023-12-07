@@ -1,4 +1,6 @@
-local Vector3 = {}
+require "math"
+
+Vector3 = {}
 
 function Vector3:new(x, y, z)
     local v = {}
@@ -43,15 +45,33 @@ local function CreateFloor()
     local floor = CreateObject()
     floor.size = Vector3:new(200, 2, 200);
     floor.boundingSize = floor.size * 0.5
-    floor.position = Vector3:new(0, -20, 0)
+    floor.position = Vector3:new(-5, 0, -5)
     floor.bounding = "AABBVolume"
     floor.texture = "checkerboard"
     return floor
 end
 
+local function CreateWall(x, y, z)
+    local wall = CreateObject()
+    wall.size = Vector3:new(10, y + 10, 10)
+    wall.bounding = "AABBVolume"
+    wall.boundingSize = wall.size * 0.5;
+    wall.position = Vector3:new(x, 5 + y/2, z);
+    return wall
+end
+
 levels = {
     [1] = {
         CreateFloor(),
-
     }
 }
+
+-- second argument is map ratio, difference between tilemap size and map size
+local level = LoadLevelFromImage("leveltest.png", 10)
+
+for k,v in ipairs(level) do
+    local thisLevel = levels[1]
+    if (v.r == 0) then
+        thisLevel[#thisLevel+1] = CreateWall(v.x, v.g, v.z);
+    end
+end

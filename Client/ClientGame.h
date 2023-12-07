@@ -65,6 +65,8 @@ protected:
 
     void StartAsClient(char a, char b, char c, char d);
     std::vector<NetworkObject*> netObjects;
+
+    int recievedPackets = 0;
 };
 
 

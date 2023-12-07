@@ -78,13 +78,6 @@ void PhysicsSystem::Update(float dt) {
 	int iteratorCount = 0;
 	while(dTOffset > realDT) {
 		IntegrateAccel(realDT); //Update accelerations from external forces
-		if (useBroadPhase) {
-			BroadPhase();
-			NarrowPhase();
-		}
-		else {
-			BasicCollisionDetection();
-		}
 
 		//This is our simple iterative solver - 
 		//we just run things multiple times, slowly moving things forward
@@ -95,11 +88,23 @@ void PhysicsSystem::Update(float dt) {
 		}
 		IntegrateVelocity(realDT); //update positions from new velocity changes
 
+        if (useBroadPhase) {
+            BroadPhase();
+            NarrowPhase();
+        }
+        else {
+            BasicCollisionDetection();
+        }
+
 		dTOffset -= realDT;
 		iteratorCount++;
-	}
 
-	ClearForces();	//Once we've finished with the forces, reset them to zero
+        ClearForces();
+    }
+
+
+
+	//Once we've finished with the forces, reset them to zero
 
 	UpdateCollisionList(); //Remove any old collisions
 

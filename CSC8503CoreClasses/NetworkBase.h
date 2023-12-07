@@ -1,5 +1,7 @@
 #pragma once
 //#include "./enet/enet.h"
+#include "lua.hpp"
+#include "stb/stb_image.h"
 struct _ENetHost;
 struct _ENetPeer;
 struct _ENetEvent;

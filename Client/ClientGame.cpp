@@ -28,6 +28,8 @@ ClientGame::ClientGame() : controller(*Window::GetWindow()->GetKeyboard(), *Wind
     lua_State *L = luaL_newstate();
     luaL_openlibs(L);
 
+    RegisterFunctions(L);
+
     auto status = luaL_dofile(L, ASSETROOTLOCATION "Data/Levels.lua");
 
     if (status) {
@@ -48,6 +50,8 @@ ClientGame::~ClientGame() {
     delete world;
     delete renderer;
     delete tweenManager;
+
+    std::cout << "Recieved Packets" << recievedPackets << std::endl;
 }
 
 void ClientGame::UpdateGame(float dt) {
@@ -176,6 +180,7 @@ void ClientGame::InitWorld() {
 }
 
 void ClientGame::ReceivePacket(int type, GamePacket *payload, int source) {
+    recievedPackets++;
     if (type == Full_State) {
         netObjects[((FullPacket*)payload)->objectID]->ReadPacket(*payload, tweenManager);
     }

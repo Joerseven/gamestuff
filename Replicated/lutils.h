@@ -6,6 +6,8 @@
 #define CSC8503_LUTILS_H
 
 #include <lua.hpp>
+#include <stb/stb_image.h>
+#include <cstring>
 
 inline void stackDump (lua_State *L) {
     int i;
@@ -106,13 +108,43 @@ inline Vector3 getVec3Field(lua_State* L, const char* key) {
     return v;
 }
 
-inline int setIntField(lua_State* L,  const char* key, int value) {
+
+
+inline void setIntField(lua_State* L,  const char* key, int value) {
     if (!lua_istable(L, -1)) {
         luaL_error(L, "element on stack is not a table!");
     }
     lua_pushstring(L, key);
     lua_pushnumber(L, value);
     lua_settable(L, -3);
+}
+
+inline void setFloatField(lua_State* L, const char* key, float value) {
+    if (!lua_istable(L, -1)) {
+        luaL_error(L, "element on stack is not a table!");
+    }
+    lua_pushstring(L, key);
+    lua_pushnumber(L, value);
+    lua_settable(L, -3);
+}
+
+inline int setVec3Field(lua_State* L, const char* key, const Vector3& value) {
+    if (!lua_istable(L ,-1)) {
+        luaL_error(L, "element on stack not a table");
+    }
+    lua_getglobal(L, "Vector3");
+    lua_getfield(L, -1, "new");
+    lua_getglobal(L, "Vector3");
+    lua_pushnumber(L, value.x);
+    lua_pushnumber(L, value.y);
+    lua_pushnumber(L, value.z);
+
+    auto result = lua_pcall(L, 4, 1, 0);
+    if (result) {
+        std::cerr << lua_tostring(L, 1) << std::endl;
+    }
+
+
 }
 
 inline int getTableSize(lua_State* L) {
@@ -126,7 +158,50 @@ inline int getTableSize(lua_State* L) {
     return length;
 }
 
+int LoadLevelFromImage(lua_State *L) {
+    auto filename = luaL_checkstring(L, 1);
+    auto mapRatio = luaL_checknumber(L, 2);
 
+    auto location = std::string(ASSETROOTLOCATION) + std::string("/Data/") + std::string(filename);
+
+    int width, height, channels;
+    unsigned char *data = stbi_load(
+            location.c_str(),
+            &width, &height, &channels, 0);
+
+    lua_createtable(L, height * width, 0);
+
+    if (!data) {
+        std::cerr << "Failed to load file" << std::endl;
+    }
+
+    int tableCounter = 1;
+
+    auto offsetX = (float)height * 0.5 * mapRatio;
+    auto offsetZ = (float)width * 0.5 * mapRatio;
+
+    for (int z =0; z < height*channels; z+=channels) {
+        for (int x = 0; x < width*channels; x+=channels) {
+            int offset = (z * width) + x;
+            auto r = (unsigned int)data[offset];
+            auto g = (unsigned int)data[offset+1];
+            auto b = (unsigned int)data[offset+2];
+            lua_newtable(L);
+            setIntField(L, "r", r);
+            setIntField(L, "g", g);
+            setIntField(L, "b", b);
+            setFloatField(L, "x", x * 0.25 * mapRatio - offsetX);
+            setFloatField(L, "z", z * 0.25 * mapRatio - offsetZ);
+            lua_rawseti(L, -2, tableCounter++);
+        }
+    }
+
+    return 1;
+}
+
+inline void RegisterFunctions(lua_State* L) {
+    lua_register(L, "LoadLevelFromImage", LoadLevelFromImage);
+}
 
 
 

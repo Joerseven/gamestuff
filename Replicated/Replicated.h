@@ -21,6 +21,10 @@ enum ServerMessages {
     Player_Jump
 };
 
+enum ObjectTypes {
+    Block,
+};
+
 
 
 // Questions

@@ -26,10 +26,12 @@ ServerGame::ServerGame() {
 
     ClearPlayers();
 
-    AddPlayerObjects(Vector3(0,0,0));
+    AddPlayerObjects(Vector3(0,60,0));
 
     lua_State *L = luaL_newstate();
     luaL_openlibs(L);
+
+    RegisterFunctions(L);
 
     auto status = luaL_dofile(L, ASSETROOTLOCATION "Data/Levels.lua");
 
@@ -48,6 +50,7 @@ ServerGame::~ServerGame() {
     delete physics;
     delete world;
     delete server;
+    std::cout << "Sent Packets: " <<  sentPackets << std::endl;
 }
 
 void ServerGame::UpdateGame(float dt) {
@@ -65,7 +68,7 @@ void ServerGame::UpdateGame(float dt) {
     world->UpdateWorld(dt);
     physics->Update(dt);
 
-    std::cout << "Player position: " << players[0]->GetTransform().GetPosition();
+    //std::cout << "Player position: " << players[0]->GetTransform().GetPosition();
 
     server->UpdateServer();
 }
@@ -73,7 +76,7 @@ void ServerGame::UpdateGame(float dt) {
 void ServerGame::UpdatePlayers() {
     for (auto it = playerControls.begin(); it != playerControls.end(); it++) {
         auto &pressed = it->second;
-        float mag = 100.0f;
+        float mag = 0.2f;
         players[playerMap[it->first]]->GetPhysicsObject()->AddForce(Vector3(
                 (float)pressed[3] * mag + (float)pressed[1] * mag * -1,
                 0,
@@ -82,6 +85,7 @@ void ServerGame::UpdatePlayers() {
 }
 
 void ServerGame::BroadcastSnapshot() {
+    sentPackets++;
     std::vector<GameObject*>::const_iterator first;
     std::vector<GameObject*>::const_iterator last;
 
@@ -125,7 +129,8 @@ void ServerGame::ReceivePacket(int type, GamePacket *payload, int source) {
         if (id == Player_Loaded) {
             CreatePlayer(source);
         } else if (id == Player_Jump) {
-            players[playerMap[source]]->GetPhysicsObject()->AddForce(Vector3(0, 5000, 0));
+            std::cout << "Big wins" << std::endl;
+            players[playerMap[source]]->GetPhysicsObject()->AddForce(Vector3(0, 1000, 0));
         }
     }
     if (type == Received_State) {
