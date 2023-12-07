@@ -75,7 +75,6 @@ void ClientGame::LoadLevel(lua_State *L, int level) {
 
     lua_pushnil(L);
     while (lua_next(L, -2)) {
-        std::cout << lua_typename(L, lua_type(L, -2)) << lua_typename(L, lua_type(L, -1)) << std::endl;
         AddObjectFromLua(L);
         lua_pop(L, 1);
     }
@@ -261,6 +260,12 @@ void ClientGame::GetClientInput() {
 
     if (Window::GetKeyboard()->KeyDown(KeyCodes::RIGHT)) {
         newPacket.buttonstates[3] = 1;
+    }
+
+    if (Window::GetKeyboard()->KeyPressed(KeyCodes::J)) {
+        ServerMessagePacket p;
+        p.messageID = Player_Jump;
+        thisClient->SendPacket(p);
     }
 
     thisClient->SendPacket(newPacket);

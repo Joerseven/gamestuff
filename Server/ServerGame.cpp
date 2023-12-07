@@ -22,7 +22,7 @@ ServerGame::ServerGame() {
     timeToNextPacket  = 0.0f;
     netIdCounter = 4;
 
-    physics->UseGravity(false);
+    physics->UseGravity(true);
 
     ClearPlayers();
 
@@ -52,7 +52,9 @@ ServerGame::~ServerGame() {
 
 void ServerGame::UpdateGame(float dt) {
 
-    server->UpdateServer();
+
+
+    UpdatePlayers();
 
     timeToNextPacket -= dt;
     if (timeToNextPacket < 0) {
@@ -63,6 +65,20 @@ void ServerGame::UpdateGame(float dt) {
     world->UpdateWorld(dt);
     physics->Update(dt);
 
+    std::cout << "Player position: " << players[0]->GetTransform().GetPosition();
+
+    server->UpdateServer();
+}
+
+void ServerGame::UpdatePlayers() {
+    for (auto it = playerControls.begin(); it != playerControls.end(); it++) {
+        auto &pressed = it->second;
+        float mag = 100.0f;
+        players[playerMap[it->first]]->GetPhysicsObject()->AddForce(Vector3(
+                (float)pressed[3] * mag + (float)pressed[1] * mag * -1,
+                0,
+                (float)pressed[2] * mag + (float)pressed[0] * mag * -1));
+    }
 }
 
 void ServerGame::BroadcastSnapshot() {
@@ -108,6 +124,8 @@ void ServerGame::ReceivePacket(int type, GamePacket *payload, int source) {
         auto id = ((ServerMessagePacket*)payload)->messageID;
         if (id == Player_Loaded) {
             CreatePlayer(source);
+        } else if (id == Player_Jump) {
+            players[playerMap[source]]->GetPhysicsObject()->AddForce(Vector3(0, 5000, 0));
         }
     }
     if (type == Received_State) {
@@ -115,10 +133,7 @@ void ServerGame::ReceivePacket(int type, GamePacket *payload, int source) {
         if (exists) {
             auto pressed = ((ClientPacket*)payload)->buttonstates;
             float mag = 100.0f;
-            players[playerMap[source]]->GetPhysicsObject()->AddForce(Vector3(
-                    (float)pressed[3] * mag + (float)pressed[1] * mag * -1,
-                    0,
-                    (float)pressed[2] * mag + (float)pressed[0] * mag * -1));
+            memcpy(playerControls[source].data(), pressed, 8*sizeof(char));
         }
     }
 }

@@ -17,7 +17,8 @@ struct ServerMessagePacket : public GamePacket {
 
 // Add different messages here
 enum ServerMessages {
-    Player_Loaded
+    Player_Loaded,
+    Player_Jump
 };
 
 

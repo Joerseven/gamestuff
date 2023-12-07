@@ -16,6 +16,7 @@
 #include "PhysicsObject.h"
 #include "Replicated.h"
 #include "lutils.h"
+#include <algorithm>
 
 #include <lua.hpp>
 
@@ -30,6 +31,7 @@ public:
     ~ServerGame();
 
     void UpdateGame(float dt);
+    void UpdatePlayers();
     void InitWorld(lua_State *L);
     void ReceivePacket(int type, GamePacket* payload, int source) override;
 
@@ -58,6 +60,7 @@ protected:
 
     std::array<GameObject*, 4> players;
     std::map<int, int> playerMap;
+    std::map<int, std::array<char, 8>> playerControls;
     int playersJoined = 0;
 
     void LoadLevel(lua_State *L, int level);

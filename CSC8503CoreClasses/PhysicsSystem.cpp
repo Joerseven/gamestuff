@@ -329,6 +329,10 @@ void PhysicsSystem::IntegrateAccel(float dt) {
     gameWorld.GetObjectIterators(first, last);
 
     for (auto i = first; i != last; i++) {
+        if (!((*i)->IsActive())) {
+            continue;
+        }
+
         PhysicsObject* object = (*i)->GetPhysicsObject();
 
         if (object == nullptr) {
@@ -372,6 +376,11 @@ void PhysicsSystem::IntegrateVelocity(float dt) {
     float frameLinearDamping = 1.0f - (0.4f * dt);
 
     for (auto i = first; i != last; i++) {
+
+        if (!((*i)->IsActive())) {
+            continue;
+        }
+
         PhysicsObject* object = (*i)->GetPhysicsObject();
         if (object == nullptr) {
             continue;
