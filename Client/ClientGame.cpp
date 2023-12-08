@@ -214,6 +214,24 @@ void ClientGame::AddPlayerObjects(const Vector3 &position) {
     }
 }
 
+void ClientGame::UpdateCamera() {
+    if (lockedObject != nullptr) {
+        Vector3 objPos = lockedObject->GetTransform().GetPosition();
+        Vector3 camPos = objPos + lockedOffset;
+
+        Matrix4 temp = Matrix4::BuildViewMatrix(camPos, objPos, Vector3(0,1,0));
+
+        Matrix4 modelMat = temp.Inverse();
+
+        Quaternion q(modelMat);
+        Vector3 angles = q.ToEuler(); //nearly there now!
+
+        world->GetMainCamera().SetPosition(camPos);
+        world->GetMainCamera().SetPitch(angles.x);
+        world->GetMainCamera().SetYaw(angles.y);
+    }
+}
+
 Texture *ClientGame::GetTexture(const std::string &texture) {
     if (textures.find(texture) == textures.end()) {
         auto p = renderer->LoadTexture(texture + std::string(".png"));

@@ -79,6 +79,7 @@ void PhysicsSystem::Update(float dt) {
 	while(dTOffset > realDT) {
 		IntegrateAccel(realDT); //Update accelerations from external forces
 
+
 		//This is our simple iterative solver - 
 		//we just run things multiple times, slowly moving things forward
 		//and then rechecking that the constraints have been met		
@@ -96,9 +97,9 @@ void PhysicsSystem::Update(float dt) {
             BasicCollisionDetection();
         }
 
+
 		dTOffset -= realDT;
 		iteratorCount++;
-
         ClearForces();
     }
 

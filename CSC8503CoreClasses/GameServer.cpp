@@ -50,6 +50,13 @@ bool GameServer::SendGlobalPacket(GamePacket& packet) {
     return true;
 }
 
+
+bool GameServer::SendPacket(GamePacket &packet, int peerId) {
+    ENetPacket* dataPacket = enet_packet_create(&packet, packet.GetTotalSize(), 0);
+    enet_peer_send(idToPeer[peerId], 0, dataPacket);
+    return true;
+}
+
 void GameServer::UpdateServer() {
     if (!netHandle) { return; }
     ENetEvent event;
@@ -61,6 +68,7 @@ void GameServer::UpdateServer() {
         if (type == ENetEventType::ENET_EVENT_TYPE_CONNECT) {
             std::cout << "Server: New client connected" << std::endl;
             lastPlayerUpdate.insert(std::make_pair(p->incomingPeerID, currentSnapshot));
+            idToPeer[peer] = p;
         }
 
         else if (type == ENetEventType::ENET_EVENT_TYPE_DISCONNECT) {

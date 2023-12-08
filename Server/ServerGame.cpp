@@ -20,7 +20,7 @@ ServerGame::ServerGame() {
 
     forceMagnitude = 10.0f;
     timeToNextPacket  = 0.0f;
-    netIdCounter = 4;
+    netIdCounter = 4; // Players added will bring it up to 4.
 
     physics->UseGravity(true);
 
@@ -54,8 +54,6 @@ ServerGame::~ServerGame() {
 }
 
 void ServerGame::UpdateGame(float dt) {
-
-
 
     UpdatePlayers();
 
@@ -156,18 +154,26 @@ GameObject *ServerGame::CreatePlayer(int peerId) {
         break;
     }
 
+    playerSenders.insert(std::make_pair(peerId, new SenderAcknowledger<GameServer>(server, peerId)));
     playerMap.insert(std::make_pair(peerId, freeIndex));
     players[playersJoined]->SetActive(true);
 
     std::cout << "Player added successfully!" << std::endl;
 
+    serverInfo.playerIds[freeIndex] = peerId;
+
     return players[playersJoined];
 }
 
 void ServerGame::PlayerLeft(int peerId) {
-    playersJoined--;
+
     players[playerMap[peerId]]->SetActive(false);
+    serverInfo.playerIds[playerMap[peerId]] = -1;
+
     playerMap.erase(peerId);
+
+    playersJoined--;
+
 
     std::cout << "Player removed successfully" << std::endl;
 

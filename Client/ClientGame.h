@@ -30,6 +30,7 @@ public:
     void ReceivePacket(int type, GamePacket* payload, int source) override;
 protected:
     void InitialiseAssets();
+    void UpdateCamera();
     void InitCamera();
     void UpdateKeys();
     void InitWorld();
@@ -58,7 +59,11 @@ protected:
     std::unordered_map<std::string, Mesh*> meshes;
     std::unordered_map<std::string, Shader*> shaders;
 
+    const Vector3 lockedOffset		= Vector3(0, 14, 20);
+
     TweenManager* tweenManager;
+
+    GameObject* lockedObject;
 
     //GameObject *AddFloorToWorld(const Vector3& position);
     void AddPlayerObjects(const Vector3& position);

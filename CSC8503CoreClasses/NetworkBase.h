@@ -16,12 +16,14 @@ enum BasicNetworkMessages {
 	Player_Connected,
 	Player_Disconnected,
 	Shutdown,
-    Server_Message
+    Server_Message,
+    Acknowledge_Packet
 };
 
 struct GamePacket {
 	short size;
 	short type;
+    int acknowledge = -1;
 
 	GamePacket() {
 		type		= BasicNetworkMessages::None;
