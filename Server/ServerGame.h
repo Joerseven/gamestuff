@@ -62,6 +62,7 @@ protected:
     std::unordered_map<int, SenderAcknowledger<GameServer>*> playerSenders;
     std::unordered_map<int, RecieverAcknowledger<GameServer>*> playerRecievers;
     std::map<int, std::array<char, 8>> playerControls;
+
     int playersJoined = 0;
     bool shouldJump = false;
 

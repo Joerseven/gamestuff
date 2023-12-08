@@ -66,8 +66,6 @@ void ServerGame::UpdateGame(float dt) {
     world->UpdateWorld(dt);
     physics->Update(dt);
 
-    //std::cout << "Player position: " << players[0]->GetTransform().GetPosition();
-
     server->UpdateServer();
 }
 

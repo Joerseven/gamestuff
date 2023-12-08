@@ -65,6 +65,9 @@ protected:
 
     GameObject* lockedObject;
 
+    SenderAcknowledger<GameClient>* senderAcknowledger;
+    RecieverAcknowledger<GameClient>* recieverAcknowledger;
+
     //GameObject *AddFloorToWorld(const Vector3& position);
     void AddPlayerObjects(const Vector3& position);
 

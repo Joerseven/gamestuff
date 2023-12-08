@@ -23,11 +23,12 @@ enum BasicNetworkMessages {
 struct GamePacket {
 	short size;
 	short type;
-    int acknowledge = -1;
+    int acknowledge;
 
 	GamePacket() {
 		type		= BasicNetworkMessages::None;
 		size		= 0;
+        acknowledge = -1;
 	}
 
 	GamePacket(short type) : GamePacket() {

@@ -79,11 +79,16 @@ public:
     }
 
     inline bool CheckAndUpdateAcknowledged(const GamePacket& packet) {
-        if (latestRecieved == packet.acknowledge + 1) {
-            latestRecieved++;
-            return true;
+
+        if (packet.acknowledge == -1) {
+            return false;
         }
 
+        if (latestRecieved + 1 == packet.acknowledge) {
+            latestRecieved++;
+            std::cout << "Packet recieved: " << packet.acknowledge << ", " << "Last Packet: " << latestRecieved << std::endl;
+            return true;
+        }
         return false;
     }
 

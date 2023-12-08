@@ -79,12 +79,11 @@ void GameServer::UpdateServer() {
         else if (type == ENetEventType::ENET_EVENT_TYPE_RECEIVE) {
             GamePacket* packet = (GamePacket*)event.packet->data;
             ProcessPacket(packet, peer);
+            idToPeer.erase(peer);
         }
 
         enet_packet_destroy(event.packet);
     }
-
-
 }
 
 void GameServer::SetGameWorld(GameWorld &g) {

@@ -44,6 +44,9 @@ ClientGame::ClientGame() : controller(*Window::GetWindow()->GetKeyboard(), *Wind
     tweenManager = new TweenManager();
 
     StartAsClient(127, 0, 0, 1);
+
+    recieverAcknowledger = new RecieverAcknowledger<GameClient>(thisClient);
+    senderAcknowledger = new SenderAcknowledger<GameClient>(thisClient);
 }
 
 ClientGame::~ClientGame() {
@@ -58,6 +61,8 @@ void ClientGame::UpdateGame(float dt) {
     GetClientInput();
 
     world->GetMainCamera().UpdateCamera(dt);
+
+
 
     //Debug::DrawLine(Vector3(500, 0, 500), Vector3(500, 100, 500), Vector4(1, 0, 0, 1));
 
@@ -180,7 +185,9 @@ void ClientGame::InitWorld() {
 }
 
 void ClientGame::ReceivePacket(int type, GamePacket *payload, int source) {
-    recievedPackets++;
+
+    recieverAcknowledger->CheckAndUpdateAcknowledged(*payload);
+
     if (type == Full_State) {
         netObjects[((FullPacket*)payload)->objectID]->ReadPacket(*payload, tweenManager);
     }
