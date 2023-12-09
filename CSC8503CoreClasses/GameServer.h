@@ -7,7 +7,7 @@ namespace NCL {
         typedef _ENetPeer ENetPeer;
 		class GameServer : public NetworkBase {
 		public:
-			GameServer(int onPort, int maxClients);
+			GameServer(int onPort, int maxClients, std::function<void(int)>&& cb);
 			~GameServer();
 
 			bool Initialise();
@@ -23,6 +23,7 @@ namespace NCL {
 			virtual void UpdateServer();
 
             int currentSnapshot;
+            std::function<void(int)> connectCallback;
 
 		protected:
 			int			port;

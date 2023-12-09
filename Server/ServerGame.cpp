@@ -9,9 +9,12 @@ GameObject* moreTheFloor;
 ServerGame::ServerGame() {
 
     NetworkBase::Initialise();
-    server = new GameServer(NetworkBase::GetDefaultPort(), 4);
+    server = new GameServer(NetworkBase::GetDefaultPort(), 4, [&](int peerId) {
+        CreatePlayer(peerId);
+    });
     server->RegisterPacketHandler(Received_State, this);
     server->RegisterPacketHandler(Server_Message, this);
+    server->RegisterPacketHandler(Acknowledge_Packet, this);
 
     std::cout << "Server starting up" << std::endl;
 
@@ -26,8 +29,6 @@ ServerGame::ServerGame() {
 
     ClearPlayers();
 
-    AddPlayerObjects(Vector3(0,60,0));
-
     lua_State *L = luaL_newstate();
     luaL_openlibs(L);
 
@@ -39,6 +40,12 @@ ServerGame::ServerGame() {
         std::cerr << "Lua file giga dead: " << lua_tostring(L, -1);
         exit(1);
     }
+
+    lua_getglobal(L, "spawnPoint");
+    auto spawnPoint = Vector3((float)getNumberField(L, "x"), (float)getNumberField(L, "y"), (float)getNumberField(L, "z"));
+    lua_pop(L, 1);
+
+    AddPlayerObjects(spawnPoint);
 
     LoadLevel(L, 1);
 
@@ -61,6 +68,12 @@ void ServerGame::UpdateGame(float dt) {
     if (timeToNextPacket < 0) {
         BroadcastSnapshot();
         timeToNextPacket += SERVERHERTZ;
+        for (auto& m : playerRecievers) {
+            m.second->SendAcknowledgement();
+        }
+        for (auto& m : playerSenders) {
+            m.second->CatchupPackets();
+        }
     }
 
     world->UpdateWorld(dt);
@@ -119,16 +132,20 @@ void DebugPackets(int type, GamePacket *payload, int source) {
 }
 
 void ServerGame::ReceivePacket(int type, GamePacket *payload, int source) {
-    //DebugPackets(type, payload, source);
+
+    if (!(playerRecievers[source]->CheckAndUpdateAcknowledged(*payload))) {
+        return;
+    };
+
     if (type == Server_Message) {
         auto id = ((ServerMessagePacket*)payload)->messageID;
-        if (id == Player_Loaded) {
-            CreatePlayer(source);
-        } else if (id == Player_Jump) {
+        if (id == Player_Jump) {
             std::cout << "Big wins" << std::endl;
             players[playerMap[source]]->GetPhysicsObject()->AddForce(Vector3(0, 1000, 0));
         }
+        return;
     }
+
     if (type == Received_State) {
         auto exists = playerMap.find(source) != playerMap.end();
         if (exists) {
@@ -136,6 +153,11 @@ void ServerGame::ReceivePacket(int type, GamePacket *payload, int source) {
             float mag = 100.0f;
             memcpy(playerControls[source].data(), pressed, 8*sizeof(char));
         }
+        return;
+    }
+
+    if (type == Acknowledge_Packet) {
+        playerSenders[source]->ReceiveAcknowledgement(((AcknowledgePacket*)payload)->acknowledge);
     }
 }
 
@@ -152,9 +174,18 @@ GameObject *ServerGame::CreatePlayer(int peerId) {
         break;
     }
 
-    playerSenders.insert(std::make_pair(peerId, new SenderAcknowledger<GameServer>(server, peerId)));
+    playerSenders.insert(std::make_pair(peerId, new SenderAcknowledger(server, peerId)));
+    playerRecievers.insert(std::make_pair(peerId, new RecieverAcknowledger(server, peerId)));
     playerMap.insert(std::make_pair(peerId, freeIndex));
     players[playersJoined]->SetActive(true);
+
+
+    MessagePacket p;
+    p.messageID = Player_Created;
+    for (auto& s : playerSenders) {
+        s.second->RequireAcknowledgement(p);
+    }
+    server->SendGlobalPacket((GamePacket&)p);
 
     std::cout << "Player added successfully!" << std::endl;
 
@@ -167,6 +198,8 @@ void ServerGame::PlayerLeft(int peerId) {
 
     players[playerMap[peerId]]->SetActive(false);
     serverInfo.playerIds[playerMap[peerId]] = -1;
+    playerSenders.erase(peerId);
+    playerRecievers.erase(peerId);
 
     playerMap.erase(peerId);
 

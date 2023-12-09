@@ -40,6 +40,16 @@ struct GamePacket {
 	}
 };
 
+struct MessagePacket : public GamePacket {
+    short playerID;
+    short messageID;
+
+    MessagePacket() {
+        type = Message;
+        size = sizeof(short) * 2;
+    }
+};
+
 class PacketReceiver {
 public:
 	virtual void ReceivePacket(int type, GamePacket* payload, int source = -1) = 0;

@@ -12,6 +12,14 @@ using namespace CSC8503;
 
 const float SERVERHERTZ = 1.0f / 20.0f;
 
+enum ServerFunctions {
+
+};
+
+enum ClientFunctions {
+
+};
+
 struct ServerInfo {
     int playerIds[4];
 };
@@ -24,7 +32,36 @@ struct ServerMessagePacket : public GamePacket {
     }
 };
 
+// Get me the size of the variadic args
+
+template <typename T, typename ...ta>
+class SizeOf {
+public:
+    static const unsigned int size = sizeof(T) + SizeOf<ta...>::size;
+};
+
+template <typename T>
+class SizeOf<T> {
+public:
+    static const unsigned int size = sizeof(T);
+};
+
+
 struct RemoteFunctionPacket : public GamePacket {
+    short functionId;
+    size_t parameterSize;
+    char parameters[100];
+    template <typename... Args>
+    RemoteFunctionPacket(short functionId, const Args&... args) {
+        int i = 0;
+        parameterSize = 0;
+        ([&] {
+            i++;
+            std::cout << "Arg = " << args << ", size = " << sizeof(args) << std::endl;
+            memcpy((void*)(parameters + parameterSize), &args, sizeof(args));
+            parameterSize += sizeof(args);
+        } (), ...);
+    }
 };
 
 struct AcknowledgePacket : public GamePacket {
@@ -44,7 +81,7 @@ public:
     }
 
     template <typename T>
-    T& RequireAcknowledgement(const T& packet) {
+    T& RequireAcknowledgement(T& packet) {
         auto copy = packet;
         packets.emplace_back(++sentCounter, std::make_unique<GamePacket>((GamePacket&)packet));
         packet.acknowledge = sentCounter;
@@ -52,6 +89,7 @@ public:
     }
 
     inline void ReceiveAcknowledgement(int playerStatus) {
+
         packets.erase(std::remove_if(packets.begin(), packets.end(), [&](std::pair<int, std::unique_ptr<GamePacket>>& p) {
             return p.first <= playerStatus;
         }), packets.end());
@@ -59,7 +97,10 @@ public:
 
     void CatchupPackets() {
         for (const auto& p : packets) {
-            thisSender->SendPacket(p, targetId);
+            if (targetId != -1) {
+                thisSender->SendPacket(*(p.second), targetId);
+                std::cout << "Catch up packets: " << packets.size() << std::endl;
+            }
         }
     }
 
@@ -79,9 +120,8 @@ public:
     }
 
     inline bool CheckAndUpdateAcknowledged(const GamePacket& packet) {
-
         if (packet.acknowledge == -1) {
-            return false;
+            return true;
         }
 
         if (latestRecieved + 1 == packet.acknowledge) {
@@ -89,10 +129,12 @@ public:
             std::cout << "Packet recieved: " << packet.acknowledge << ", " << "Last Packet: " << latestRecieved << std::endl;
             return true;
         }
+
         return false;
     }
 
     void SendAcknowledgement() {
+        int t = -2;
         AcknowledgePacket p;
         p.acknowledge = latestRecieved;
         receiver->SendPacket(p, targetId);
@@ -106,7 +148,8 @@ private:
 // Add different messages here
 enum ServerMessages {
     Player_Loaded,
-    Player_Jump
+    Player_Jump,
+    Player_Created,
 };
 
 

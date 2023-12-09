@@ -23,7 +23,7 @@ ClientGame::ClientGame() : controller(*Window::GetWindow()->GetKeyboard(), *Wind
 
     netIdCounter = 4;
 
-    InitialiseAssets();
+
 
     lua_State *L = luaL_newstate();
     luaL_openlibs(L);
@@ -37,6 +37,15 @@ ClientGame::ClientGame() : controller(*Window::GetWindow()->GetKeyboard(), *Wind
         exit(1);
     }
 
+    InitCamera();
+    InitWorld();
+
+    lua_getglobal(L, "spawnPoint");
+    auto spawnPoint = Vector3((float)getNumberField(L, "x"), (float)getNumberField(L, "y"), (float)getNumberField(L, "z"));
+    lua_pop(L, 1);
+
+    AddPlayerObjects(spawnPoint);
+
     LoadLevel(L, 1);
 
     lua_close(L);
@@ -45,8 +54,12 @@ ClientGame::ClientGame() : controller(*Window::GetWindow()->GetKeyboard(), *Wind
 
     StartAsClient(127, 0, 0, 1);
 
-    recieverAcknowledger = new RecieverAcknowledger<GameClient>(thisClient);
-    senderAcknowledger = new SenderAcknowledger<GameClient>(thisClient);
+    recieverAcknowledger = new RecieverAcknowledger(thisClient);
+    senderAcknowledger = new SenderAcknowledger(thisClient);
+
+
+
+    //RemoteFunctionPacket(2, "Hello world", 27, 4921231, 18);
 }
 
 ClientGame::~ClientGame() {
@@ -62,8 +75,6 @@ void ClientGame::UpdateGame(float dt) {
 
     world->GetMainCamera().UpdateCamera(dt);
 
-
-
     //Debug::DrawLine(Vector3(500, 0, 500), Vector3(500, 100, 500), Vector4(1, 0, 0, 1));
 
     world->UpdateWorld(dt);
@@ -71,6 +82,9 @@ void ClientGame::UpdateGame(float dt) {
     tweenManager->Update(dt);
 
     renderer->Update(dt);
+
+    recieverAcknowledger->SendAcknowledgement();
+    senderAcknowledger->CatchupPackets();
 
     renderer->Render();
     thisClient->UpdateClient();
@@ -144,6 +158,7 @@ void ClientGame::StartAsClient(char a, char b, char c, char d) {
     thisClient->RegisterPacketHandler(Player_Connected, this);
     thisClient->RegisterPacketHandler(Player_Disconnected, this);
     thisClient->RegisterPacketHandler(Message, this);
+    thisClient->RegisterPacketHandler(Acknowledge_Packet, this);
 
     thisClient->connectCallback = [&](){
         ServerMessagePacket p;
@@ -156,9 +171,7 @@ void ClientGame::StartAsClient(char a, char b, char c, char d) {
 
 void ClientGame::InitialiseAssets() {
 
-    InitCamera();
-    InitWorld();
-    AddPlayerObjects({0,0,0});
+
 }
 
 void ClientGame::InitCamera() {
@@ -186,10 +199,22 @@ void ClientGame::InitWorld() {
 
 void ClientGame::ReceivePacket(int type, GamePacket *payload, int source) {
 
-    recieverAcknowledger->CheckAndUpdateAcknowledged(*payload);
+    if (recieverAcknowledger->CheckAndUpdateAcknowledged(*payload)) {
+        return;
+    }
 
     if (type == Full_State) {
         netObjects[((FullPacket*)payload)->objectID]->ReadPacket(*payload, tweenManager);
+    }
+
+    if (type == Message) {
+        if (((MessagePacket*)payload)->messageID == Player_Created) {
+            std::cout << "Holey shit it worked" << std::endl;
+        }
+    }
+
+    if (type == Acknowledge_Packet) {
+        senderAcknowledger->ReceiveAcknowledgement(((AcknowledgePacket*)payload)->acknowledge);
     }
 }
 

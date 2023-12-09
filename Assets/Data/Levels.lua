@@ -60,6 +60,8 @@ local function CreateWall(x, y, z)
     return wall
 end
 
+spawnPoint = Vector3:new(0, 10, 0)
+
 levels = {
     [1] = {
         CreateFloor(),
