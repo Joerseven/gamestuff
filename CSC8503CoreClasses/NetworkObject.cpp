@@ -69,7 +69,7 @@ bool NetworkObject::ReadFullPacket(FullPacket &p, TweenManager* tweenManager) {
 //    object.GetTransform().SetPosition(lastFullState.position);
 //    object.GetTransform().SetOrientation(lastFullState.orientation);
 
-    object.SetActive(true);
+    //object.SetActive(true);
 
     stateHistory.emplace_back(lastFullState);
 

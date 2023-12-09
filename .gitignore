@@ -23,3 +23,5 @@ _deps
 cmake-build-debug-visual-studio
 build.ninja
 cmake-build-debug
+assimp/test
+assimp/tools

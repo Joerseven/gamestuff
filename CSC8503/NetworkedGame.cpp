@@ -6,15 +6,6 @@
 
 #define COLLISION_MSG 30
 
-struct MessagePacket : public GamePacket {
-	short playerID;
-	short messageID;
-
-	MessagePacket() {
-		type = Message;
-		size = sizeof(short) * 2;
-	}
-};
 
 NetworkedGame::NetworkedGame()	{
 	thisServer = nullptr;
@@ -32,7 +23,7 @@ NetworkedGame::~NetworkedGame()	{
 
 void NetworkedGame::StartAsServer() {
 
-	thisServer = new GameServer(NetworkBase::GetDefaultPort(), 4);
+	//thisServer = new GameServer(NetworkBase::GetDefaultPort(), 4);
 
 	thisServer->RegisterPacketHandler(Received_State, this);
 

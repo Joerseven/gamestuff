@@ -23,10 +23,12 @@ ClientGame::ClientGame() : controller(*Window::GetWindow()->GetKeyboard(), *Wind
 
     netIdCounter = 4;
 
-    InitialiseAssets();
+
 
     lua_State *L = luaL_newstate();
     luaL_openlibs(L);
+
+    RegisterFunctions(L);
 
     auto status = luaL_dofile(L, ASSETROOTLOCATION "Data/Levels.lua");
 
@@ -35,6 +37,15 @@ ClientGame::ClientGame() : controller(*Window::GetWindow()->GetKeyboard(), *Wind
         exit(1);
     }
 
+    InitCamera();
+    InitWorld();
+
+    lua_getglobal(L, "spawnPoint");
+    auto spawnPoint = Vector3((float)getNumberField(L, "x"), (float)getNumberField(L, "y"), (float)getNumberField(L, "z"));
+    lua_pop(L, 1);
+
+    AddPlayerObjects(spawnPoint);
+
     LoadLevel(L, 1);
 
     lua_close(L);
@@ -42,12 +53,21 @@ ClientGame::ClientGame() : controller(*Window::GetWindow()->GetKeyboard(), *Wind
     tweenManager = new TweenManager();
 
     StartAsClient(127, 0, 0, 1);
+
+    recieverAcknowledger = new RecieverAcknowledger(thisClient);
+    senderAcknowledger = new SenderAcknowledger(thisClient);
+
+
+
+    //RemoteFunctionPacket(2, "Hello world", 27, 4921231, 18);
 }
 
 ClientGame::~ClientGame() {
     delete world;
     delete renderer;
     delete tweenManager;
+
+    std::cout << "Recieved Packets" << recievedPackets << std::endl;
 }
 
 void ClientGame::UpdateGame(float dt) {
@@ -62,6 +82,9 @@ void ClientGame::UpdateGame(float dt) {
     tweenManager->Update(dt);
 
     renderer->Update(dt);
+
+    recieverAcknowledger->SendAcknowledgement();
+    senderAcknowledger->CatchupPackets();
 
     renderer->Render();
     thisClient->UpdateClient();
@@ -135,6 +158,7 @@ void ClientGame::StartAsClient(char a, char b, char c, char d) {
     thisClient->RegisterPacketHandler(Player_Connected, this);
     thisClient->RegisterPacketHandler(Player_Disconnected, this);
     thisClient->RegisterPacketHandler(Message, this);
+    thisClient->RegisterPacketHandler(Acknowledge_Packet, this);
 
     thisClient->connectCallback = [&](){
         ServerMessagePacket p;
@@ -147,9 +171,7 @@ void ClientGame::StartAsClient(char a, char b, char c, char d) {
 
 void ClientGame::InitialiseAssets() {
 
-    InitCamera();
-    InitWorld();
-    AddPlayerObjects({0,0,0});
+
 }
 
 void ClientGame::InitCamera() {
@@ -176,8 +198,23 @@ void ClientGame::InitWorld() {
 }
 
 void ClientGame::ReceivePacket(int type, GamePacket *payload, int source) {
+
+    if (recieverAcknowledger->CheckAndUpdateAcknowledged(*payload)) {
+        return;
+    }
+
     if (type == Full_State) {
         netObjects[((FullPacket*)payload)->objectID]->ReadPacket(*payload, tweenManager);
+    }
+
+    if (type == Message) {
+        if (((MessagePacket*)payload)->messageID == Player_Created) {
+            std::cout << "Holey shit it worked" << std::endl;
+        }
+    }
+
+    if (type == Acknowledge_Packet) {
+        senderAcknowledger->ReceiveAcknowledgement(((AcknowledgePacket*)payload)->acknowledge);
     }
 }
 
@@ -206,6 +243,24 @@ void ClientGame::AddPlayerObjects(const Vector3 &position) {
         //Debug::DrawBoundingVolume(&character->GetTransform(), (CollisionVolume*)volume, Vector4(1.0, 0.5, 0.2, 1.0));
 
         world->AddGameObject(character);
+    }
+}
+
+void ClientGame::UpdateCamera() {
+    if (lockedObject != nullptr) {
+        Vector3 objPos = lockedObject->GetTransform().GetPosition();
+        Vector3 camPos = objPos + lockedOffset;
+
+        Matrix4 temp = Matrix4::BuildViewMatrix(camPos, objPos, Vector3(0,1,0));
+
+        Matrix4 modelMat = temp.Inverse();
+
+        Quaternion q(modelMat);
+        Vector3 angles = q.ToEuler(); //nearly there now!
+
+        world->GetMainCamera().SetPosition(camPos);
+        world->GetMainCamera().SetPitch(angles.x);
+        world->GetMainCamera().SetYaw(angles.y);
     }
 }
 

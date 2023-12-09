@@ -98,5 +98,9 @@ namespace NCL::CSC8503 {
 	};
 }
 
+class DickObject : public NCL::CSC8503::GameObject {
+
+};
+
 using namespace NCL::CSC8503;
 

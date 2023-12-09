@@ -88,37 +88,6 @@ protected:
     std::string name;
 };
 
-void TestNetworking() {
-    NetworkBase::Initialise();
-
-    TestPacketReceiver serverReciever("Server");
-    TestPacketReceiver clientReciever("Client");
-
-    int port = NetworkBase::GetDefaultPort();
-
-    GameServer* server = new GameServer(port, 1);
-    GameClient* client = new GameClient();
-
-    server->RegisterPacketHandler(String_Message, &serverReciever);
-    client->RegisterPacketHandler(String_Message, &clientReciever);
-
-    auto test1 = StringPacket("Server says hello! " + std::to_string(15));
-    auto test2 = StringPacket("Client says hello! " + std::to_string(12));
-
-    bool canConnect = client->Connect(127, 0, 0, 1, port);
-    for (int i = 0; i < 100; i++) {
-        server->SendGlobalPacket(test1);
-        client->SendPacket(test2);
-
-        server->UpdateServer();
-        client->UpdateClient();
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
-
-    NetworkBase::Destroy();
-}
-
 /*
 
 The main function should look pretty familar to you!
@@ -132,7 +101,6 @@ hide or show the
 
 */
 int main() {
-    TestNetworking();
 	Window*w = Window::CreateGameWindow("CSC8503 Game technology!", 1920, 1080);
 
 	if (!w->HasInitialised()) {
