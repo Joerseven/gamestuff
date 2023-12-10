@@ -92,5 +92,3 @@ for k,v in ipairs(level) do
         thisLevel[#thisLevel+1] = CreateWall(v.x, v.g, v.z);
     end
 end
-
-print(dump(debug.getinfo(CreateWall)))

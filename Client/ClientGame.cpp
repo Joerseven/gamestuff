@@ -229,9 +229,10 @@ void ClientGame::ReceivePacket(int type, GamePacket *payload, int source) {
     if (type >= Function) {
         if (type == Functions::AssignPlayerFunction) {
             auto& packetInfo = ((FunctionPacket<AssignPlayerFunction>*)payload)->info;
+            if (packetInfo.isThisPlayer) {
+                lockedObject = &netObjects[packetInfo.networkId]->object;
+            }
             netObjects[packetInfo.networkId]->object.SetActive(true);
-            lockedObject = &netObjects[packetInfo.networkId]->object;
-            std::cout << "Setting network id " << packetInfo.networkId << " to true" << std::endl;
         }
 
         if (type == Functions::SetNetworkObjectActive) {
