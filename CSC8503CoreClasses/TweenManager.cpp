@@ -12,11 +12,12 @@ void TweenManager::Create(Transform* character, const Transform& target, float d
     t.duration = duration;
     t.elapsed = 0.0f;
     // Must be an easier way to do this
-    if (tweens.find(character) == tweens.end()) {
-        tweens.insert(std::make_pair(character, t));
-    } else {
-        tweens[character] = t;
-    }
+    tweens[character] = t;
+//    if (tweens.find(character) == tweens.end()) {
+//        tweens.insert(std::make_pair(character, t));
+//    } else {
+//        tweens[character] = t;
+//    }
 }
 
 void TweenManager::Update(float dt) {
@@ -28,7 +29,7 @@ void TweenManager::Update(float dt) {
             tweens.erase(it++);
         } else {
             v.current->SetPosition(Vector3::Lerp(v.original.GetPosition(), v.target.GetPosition(), v.elapsed / v.duration));
-            //v.current->SetOrientation(Quaternion::Lerp(v.original.GetOrientation(), v.target.GetOrientation(), v.elapsed / v.duration));
+            v.current->SetOrientation(Quaternion::Lerp(v.original.GetOrientation(), v.target.GetOrientation(), v.elapsed / v.duration));
             it++;
         }
     }

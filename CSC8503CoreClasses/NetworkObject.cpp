@@ -110,6 +110,7 @@ bool NetworkObject::WriteFullPacket(GamePacket**p) {
 	FullPacket* fp = new FullPacket();
     fp->objectID = networkID;
     fp->fullState.position = object.GetTransform().GetPosition();
+    fp->fullState.orientation = object.GetTransform().GetOrientation();
     fp->fullState.stateID = lastFullState.stateID++;
     *p = fp;
     return true;

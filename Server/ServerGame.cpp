@@ -60,7 +60,6 @@ ServerGame::~ServerGame() {
     delete physics;
     delete world;
     delete server;
-    std::cout << "Sent Packets: " <<  sentPackets << std::endl;
 }
 
 void ServerGame::UpdateGame(float dt) {
@@ -87,12 +86,18 @@ void ServerGame::UpdateGame(float dt) {
 
 void ServerGame::UpdatePlayers() {
     for (auto it = playerControls.begin(); it != playerControls.end(); it++) {
+        auto player = players[playerMap[it->first]];
         auto &pressed = it->second;
         float mag = 0.2f;
-        players[playerMap[it->first]]->GetPhysicsObject()->AddForce(Vector3(
-                (float)pressed[3] * mag + (float)pressed[1] * mag * -1,
-                0,
-                (float)pressed[2] * mag + (float)pressed[0] * mag * -1));
+
+        player->GetTransform()
+            .SetOrientation(Quaternion::AxisAngleToQuaterion({0, 1, 0}, *((float*)&pressed[1])).Normalised());
+
+        player->GetPhysicsObject()->AddForce(player->GetTransform().GetOrientation() * Vector3(0, 0, (float)pressed[0] * mag * -1));
+//        players[playerMap[it->first]]->GetPhysicsObject()->AddForce(Vector3(
+//                (float)pressed[3] * mag + (float)pressed[1] * mag * -1,
+//                0,
+//                (float)pressed[2] * mag + (float)pressed[0] * mag * -1));
     }
 }
 
@@ -143,7 +148,6 @@ void ServerGame::ReceivePacket(int type, GamePacket *payload, int source) {
     if (type == Server_Message) {
         auto id = ((ServerMessagePacket*)payload)->messageID;
         if (id == Player_Jump) {
-            std::cout << "Big wins" << std::endl;
             players[playerMap[source]]->GetPhysicsObject()->AddForce(Vector3(0, 1000, 0));
         }
         return;
@@ -182,14 +186,16 @@ GameObject *ServerGame::CreatePlayer(int peerId) {
     playerMap.insert(std::make_pair(peerId, freeIndex));
     players[freeIndex]->SetActive(true);
 
-
-    AssignPlayerPacket p(players[freeIndex]->GetNetworkObject()->networkID, peerId);
     for (auto& s : playerSenders) {
-        p.isU = peerId == s.first;
+        FunctionPacket p(AssignPlayerFunction{players[freeIndex]->GetNetworkObject()->networkID, peerId, peerId == s.first}, Functions::AssignPlayerFunction);
         s.second->RequireAcknowledgement(p);
-        server->SendPacket(p, peerId);
+        server->SendPacket(p, s.first);
     }
 
+    for (auto n : netObjects) {
+        FunctionPacket p(SetNetworkObjectActive{n->networkID, n->object.IsActive()}, Functions::SetNetworkObjectActive);
+        server->SendPacket(playerSenders[peerId]->RequireAcknowledgement(p), peerId);
+    }
 
     std::cout << "Player added successfully!" << std::endl;
 
@@ -218,7 +224,6 @@ void ServerGame::LoadLevel(lua_State *L, int level) {
 
     lua_pushnil(L);
     while (lua_next(L, -2)) {
-        std::cout << lua_typename(L, lua_type(L, -2)) << lua_typename(L, lua_type(L, -1)) << std::endl;
         AddObjectFromLua(L);
         lua_pop(L, 1);
     }
@@ -240,6 +245,7 @@ void ServerGame::AddObjectFromLua(lua_State *L) {
 
     if (getBool(L, "network")) {
         g->SetNetworkObject(new NetworkObject(*g, ++netIdCounter));
+        netObjects.push_back(g->GetNetworkObject());
     }
 
     moreTheFloor = g;
@@ -314,6 +320,7 @@ void ServerGame::AddPlayerObjects(const Vector3 &position) {
         character->GetPhysicsObject()->InitSphereInertia();
 
         character->SetNetworkObject(new NetworkObject(*character, i));
+        netObjects.push_back(character->GetNetworkObject());
 
         character->SetActive(false);
 

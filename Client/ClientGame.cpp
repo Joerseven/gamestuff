@@ -10,6 +10,8 @@ ClientGame::ClientGame() : controller(*Window::GetWindow()->GetKeyboard(), *Wind
     world = new GameWorld();
     renderer = new GameTechRenderer(*world);
 
+    lockedObject = nullptr;
+
     world->GetMainCamera().SetController(controller);
 
     controller.MapAxis(0, "Sidestep");
@@ -71,9 +73,12 @@ ClientGame::~ClientGame() {
 }
 
 void ClientGame::UpdateGame(float dt) {
+    UpdateCharacterDirection();
     GetClientInput();
 
-    world->GetMainCamera().UpdateCamera(dt);
+    //world->GetMainCamera().UpdateCamera(dt);
+    UpdateCamera();
+
 
     //Debug::DrawLine(Vector3(500, 0, 500), Vector3(500, 100, 500), Vector4(1, 0, 0, 1));
 
@@ -160,7 +165,8 @@ void ClientGame::StartAsClient(char a, char b, char c, char d) {
     thisClient->RegisterPacketHandler(Message, this);
     thisClient->RegisterPacketHandler(String_Message, this);
     thisClient->RegisterPacketHandler(Acknowledge_Packet, this);
-    thisClient->RegisterPacketHandler(Assign_Player, this);
+    thisClient->RegisterPacketHandler(Function, this);
+    thisClient->RegisterPacketHandler(Function + 1, this);
 
     thisClient->connectCallback = [&](){
         ServerMessagePacket p;
@@ -220,9 +226,19 @@ void ClientGame::ReceivePacket(int type, GamePacket *payload, int source) {
         senderAcknowledger->ReceiveAcknowledgement(((AcknowledgePacket*)payload)->acknowledge);
     }
 
-    if (type == Assign_Player) {
-        std::cout << ((AssignPlayerPacket*)payload)->networkId << std::endl;
-        netObjects[((AssignPlayerPacket*)payload)->networkId]->object.SetActive(true);
+    if (type >= Function) {
+        if (type == Functions::AssignPlayerFunction) {
+            auto& packetInfo = ((FunctionPacket<AssignPlayerFunction>*)payload)->info;
+            netObjects[packetInfo.networkId]->object.SetActive(true);
+            lockedObject = &netObjects[packetInfo.networkId]->object;
+            std::cout << "Setting network id " << packetInfo.networkId << " to true" << std::endl;
+        }
+
+        if (type == Functions::SetNetworkObjectActive) {
+            auto& packetInfo = ((FunctionPacket<SetNetworkObjectActive>*)payload)->info;
+            netObjects[packetInfo.networkId]->object.SetActive(packetInfo.isActive);
+            std::cout << "Setting network id " << packetInfo.networkId << " to " << packetInfo.isActive << std::endl;
+        }
     }
 }
 
@@ -257,7 +273,12 @@ void ClientGame::AddPlayerObjects(const Vector3 &position) {
 void ClientGame::UpdateCamera() {
     if (lockedObject != nullptr) {
         Vector3 objPos = lockedObject->GetTransform().GetPosition();
-        Vector3 camPos = objPos + lockedOffset;
+
+        auto camMat = Matrix4::Translation(objPos)
+                * Matrix4::Rotation(yaw, Vector3(0, 1, 0))
+                * Matrix4::Translation(lockedOffset);
+
+        auto camPos = camMat.GetPositionVector();
 
         Matrix4 temp = Matrix4::BuildViewMatrix(camPos, objPos, Vector3(0,1,0));
 
@@ -267,8 +288,8 @@ void ClientGame::UpdateCamera() {
         Vector3 angles = q.ToEuler(); //nearly there now!
 
         world->GetMainCamera().SetPosition(camPos);
+        world->GetMainCamera().SetYaw(yaw);
         world->GetMainCamera().SetPitch(angles.x);
-        world->GetMainCamera().SetYaw(angles.y);
     }
 }
 
@@ -313,17 +334,8 @@ void ClientGame::GetClientInput() {
         newPacket.buttonstates[0] = 1;
     }
 
-    if (Window::GetKeyboard()->KeyDown(KeyCodes::LEFT)) {
-        newPacket.buttonstates[1] = 1;
-    }
-
-    if (Window::GetKeyboard()->KeyDown(KeyCodes::DOWN)) {
-        newPacket.buttonstates[2] = 1;
-    }
-
-    if (Window::GetKeyboard()->KeyDown(KeyCodes::RIGHT)) {
-        newPacket.buttonstates[3] = 1;
-    }
+    auto address = (float*)&newPacket.buttonstates[1];
+    *address = yaw;
 
     if (Window::GetKeyboard()->KeyPressed(KeyCodes::J)) {
         ServerMessagePacket p;
@@ -336,6 +348,18 @@ void ClientGame::GetClientInput() {
 
 void ClientGame::Disconnect() {
     thisClient->Disconnect();
+}
+
+void ClientGame::UpdateCharacterDirection() {
+    yaw -= controller.GetNamedAxis("XLook");
+
+    if (yaw <0) {
+        yaw += 360.0f;
+    }
+    if (yaw > 360.0f) {
+        yaw -= 360.0f;
+    }
+
 }
 
 int main() {

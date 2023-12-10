@@ -39,6 +39,7 @@ protected:
     void InitWorld();
     void GetClientInput();
     void LoadLevel(lua_State *L, int level);
+    void UpdateCharacterDirection();
 
     void AddObjectFromLua(lua_State *L);
     void AddVolume(GameObject* g, const std::string& volumeType, lua_State *L);
@@ -62,7 +63,7 @@ protected:
     std::unordered_map<std::string, Mesh*> meshes;
     std::unordered_map<std::string, Shader*> shaders;
 
-    const Vector3 lockedOffset		= Vector3(0, 14, 20);
+    const Vector3 lockedOffset		= Vector3(0, 8, 20);
 
     TweenManager* tweenManager;
 
@@ -78,6 +79,8 @@ protected:
     std::vector<NetworkObject*> netObjects;
 
     int recievedPackets = 0;
+    float pitch = 0.0f;
+    float yaw = 0.0f;
 };
 
 

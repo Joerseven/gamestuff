@@ -24,17 +24,35 @@ struct ServerMessagePacket : public GamePacket {
     }
 };
 
-struct AssignPlayerPacket : public GamePacket {
+namespace Functions {
+    enum Functions {
+        AssignPlayerFunction = Function,
+        SetNetworkObjectActive,
+    };
+}
+
+struct AssignPlayerFunction {
     int networkId;
     int peerId;
-    bool isU;
-    AssignPlayerPacket(int n, int p) {
-        type = Assign_Player;
-        networkId = n;
-        peerId = p;
-        size = sizeof(int) * 2 + sizeof(bool);
+    bool isThisPlayer;
+};
+
+struct SetNetworkObjectActive {
+    int networkId;
+    bool isActive;
+};
+
+#pragma pack(push, 1)
+template <typename T>
+struct FunctionPacket : public GamePacket {
+    T info;
+    FunctionPacket(T i, int function) {
+        type = function;
+        info = i;
+        size = sizeof(FunctionPacket<T>) - sizeof(GamePacket);
     }
 };
+#pragma pack(pop)
 
 enum Args {
     integer
@@ -115,16 +133,17 @@ struct AcknowledgePacket : public GamePacket {
 template <typename R>
 class SenderAcknowledger {
 public:
-    SenderAcknowledger(R* sender, int id = -1): sentCounter(0) {
+    SenderAcknowledger(R* sender, int id = -999): sentCounter(0) {
         thisSender = sender;
         targetId = id;
     }
 
     template <typename T>
     T& RequireAcknowledgement(T& packet) {
-        auto copy = packet;
-        packets.emplace_back(++sentCounter, std::make_unique<GamePacket>((GamePacket&)packet));
         packet.acknowledge = sentCounter;
+        auto copy = packet;
+        std::unique_ptr<GamePacket> p = std::make_unique<T>(copy);
+        packets.emplace_back(sentCounter++, std::move(p));
         return packet;
     }
 
@@ -136,10 +155,10 @@ public:
 
     void CatchupPackets() {
         for (const auto& p : packets) {
-            if (targetId != -1) {
+            //if (targetId != -999) {
                 thisSender->SendPacket(*(p.second), targetId);
                 std::cout << "Catch up packets: " << packets.size() << std::endl;
-            }
+            //}
         }
     }
 
@@ -153,16 +172,18 @@ private:
 template <typename R>
 class RecieverAcknowledger {
 public:
-    RecieverAcknowledger(R* rm, int id = -1) : latestRecieved(0) {
+    RecieverAcknowledger(R* rm, int id = -1) : latestRecieved(-1) {
         receiver = rm;
         targetId = id;
     }
 
     inline bool CheckAndUpdateAcknowledged(const GamePacket& packet) {
+        // These don't need to be checked.
         if (packet.acknowledge == -1) {
             return true;
         }
 
+        // This checks if next in acknowledge queue
         if (latestRecieved + 1 == packet.acknowledge) {
             latestRecieved++;
             std::cout << "Packet recieved: " << packet.acknowledge << ", " << "Last Packet: " << latestRecieved << std::endl;

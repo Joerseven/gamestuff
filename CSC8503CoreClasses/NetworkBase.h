@@ -18,7 +18,7 @@ enum BasicNetworkMessages {
 	Shutdown,
     Server_Message,
     Acknowledge_Packet,
-    Assign_Player
+    Function // KEEP THIS LAST
 };
 
 struct GamePacket {
@@ -31,6 +31,8 @@ struct GamePacket {
 		size		= 0;
         acknowledge = -1;
 	}
+
+    virtual ~GamePacket() = default;
 
 	GamePacket(short type) : GamePacket() {
 		this->type	= type;
