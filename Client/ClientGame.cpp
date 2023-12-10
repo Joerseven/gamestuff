@@ -199,7 +199,7 @@ void ClientGame::InitWorld() {
 
 void ClientGame::ReceivePacket(int type, GamePacket *payload, int source) {
 
-    if (recieverAcknowledger->CheckAndUpdateAcknowledged(*payload)) {
+    if (!(recieverAcknowledger->CheckAndUpdateAcknowledged(*payload))) {
         return;
     }
 
