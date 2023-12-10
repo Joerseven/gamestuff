@@ -7,6 +7,13 @@ x64
 /.cmake
 CMakeCache.txt
 cmake_install.cmake
+CMakeScripts
+Testing
+Makefile
+install_manifest.json
+compile_commands.json
+CTestTestfile.cmake
+_deps
 *.exe
 *.ilk
 *.pdb

@@ -17,7 +17,8 @@ enum BasicNetworkMessages {
 	Player_Disconnected,
 	Shutdown,
     Server_Message,
-    Acknowledge_Packet
+    Acknowledge_Packet,
+    Assign_Player
 };
 
 struct GamePacket {

@@ -28,6 +28,9 @@ public:
 
     void UpdateGame(float dt);
     void ReceivePacket(int type, GamePacket* payload, int source) override;
+
+    void Disconnect();
+
 protected:
     void InitialiseAssets();
     void UpdateCamera();

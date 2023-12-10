@@ -50,7 +50,9 @@ namespace NCL::CSC8503 {
 		virtual bool WritePacket(GamePacket** p, bool deltaFrame, int stateID);
 
 		void UpdateStateHistory(int minID);
+        int networkID;
 
+        GameObject& object;
 	protected:
 
 		NetworkState& GetLatestNetworkState();
@@ -63,7 +65,7 @@ namespace NCL::CSC8503 {
 		virtual bool WriteDeltaPacket(GamePacket**p, int stateID);
 		virtual bool WriteFullPacket(GamePacket**p);
 
-		GameObject& object;
+
 
 		NetworkState lastFullState;
 
@@ -71,7 +73,5 @@ namespace NCL::CSC8503 {
 
 		int deltaErrors;
 		int fullErrors;
-
-		int networkID;
 	};
 }

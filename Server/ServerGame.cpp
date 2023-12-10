@@ -9,8 +9,11 @@ GameObject* moreTheFloor;
 ServerGame::ServerGame() {
 
     NetworkBase::Initialise();
-    server = new GameServer(NetworkBase::GetDefaultPort(), 4, [&](int peerId) {
+    server = new GameServer(NetworkBase::GetDefaultPort(), 4,[&](int peerId) {
         CreatePlayer(peerId);
+    },
+                            [&](int peerId) {
+        PlayerLeft(peerId);
     });
     server->RegisterPacketHandler(Received_State, this);
     server->RegisterPacketHandler(Server_Message, this);
@@ -177,21 +180,22 @@ GameObject *ServerGame::CreatePlayer(int peerId) {
     playerSenders.insert(std::make_pair(peerId, new SenderAcknowledger(server, peerId)));
     playerRecievers.insert(std::make_pair(peerId, new RecieverAcknowledger(server, peerId)));
     playerMap.insert(std::make_pair(peerId, freeIndex));
-    players[playersJoined]->SetActive(true);
+    players[freeIndex]->SetActive(true);
 
 
-    MessagePacket p;
-    p.messageID = Player_Created;
+    AssignPlayerPacket p(players[freeIndex]->GetNetworkObject()->networkID, peerId);
     for (auto& s : playerSenders) {
+        p.isU = peerId == s.first;
         s.second->RequireAcknowledgement(p);
+        server->SendPacket(p, peerId);
     }
-    server->SendGlobalPacket((GamePacket&)p);
+
 
     std::cout << "Player added successfully!" << std::endl;
 
     serverInfo.playerIds[freeIndex] = peerId;
 
-    return players[playersJoined];
+    return players[freeIndex];
 }
 
 void ServerGame::PlayerLeft(int peerId) {
@@ -202,9 +206,6 @@ void ServerGame::PlayerLeft(int peerId) {
     playerRecievers.erase(peerId);
 
     playerMap.erase(peerId);
-
-    playersJoined--;
-
 
     std::cout << "Player removed successfully" << std::endl;
 
