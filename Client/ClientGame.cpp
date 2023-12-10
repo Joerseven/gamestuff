@@ -158,7 +158,9 @@ void ClientGame::StartAsClient(char a, char b, char c, char d) {
     thisClient->RegisterPacketHandler(Player_Connected, this);
     thisClient->RegisterPacketHandler(Player_Disconnected, this);
     thisClient->RegisterPacketHandler(Message, this);
+    thisClient->RegisterPacketHandler(String_Message, this);
     thisClient->RegisterPacketHandler(Acknowledge_Packet, this);
+    thisClient->RegisterPacketHandler(Assign_Player, this);
 
     thisClient->connectCallback = [&](){
         ServerMessagePacket p;
@@ -197,9 +199,10 @@ void ClientGame::InitWorld() {
     world->ClearAndErase();
 }
 
+
 void ClientGame::ReceivePacket(int type, GamePacket *payload, int source) {
 
-    if (recieverAcknowledger->CheckAndUpdateAcknowledged(*payload)) {
+    if (!recieverAcknowledger->CheckAndUpdateAcknowledged(*payload)) {
         return;
     }
 
@@ -209,12 +212,17 @@ void ClientGame::ReceivePacket(int type, GamePacket *payload, int source) {
 
     if (type == Message) {
         if (((MessagePacket*)payload)->messageID == Player_Created) {
-            std::cout << "Holey shit it worked" << std::endl;
+
         }
     }
 
     if (type == Acknowledge_Packet) {
         senderAcknowledger->ReceiveAcknowledgement(((AcknowledgePacket*)payload)->acknowledge);
+    }
+
+    if (type == Assign_Player) {
+        std::cout << ((AssignPlayerPacket*)payload)->networkId << std::endl;
+        netObjects[((AssignPlayerPacket*)payload)->networkId]->object.SetActive(true);
     }
 }
 
@@ -326,6 +334,10 @@ void ClientGame::GetClientInput() {
     thisClient->SendPacket(newPacket);
 }
 
+void ClientGame::Disconnect() {
+    thisClient->Disconnect();
+}
+
 int main() {
     Window*w = Window::CreateGameWindow("CSC8503 Game technology!", 1920, 1080);
 
@@ -355,5 +367,6 @@ int main() {
 
         g->UpdateGame(dt);
     }
+    g->Disconnect();
     Window::DestroyGameWindow();
 }

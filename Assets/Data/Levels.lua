@@ -1,4 +1,19 @@
 require "math"
+require "debug"
+
+function dump(o)
+    if type(o) == 'table' then
+        local s = '{ '
+        for k,v in pairs(o) do
+            if type(k) ~= 'number' then k = '"'..k..'"' end
+            s = s .. '['..k..'] = ' .. dump(v) .. ','
+        end
+        return s .. '} '
+    else
+        return tostring(o)
+    end
+end
+
 
 Vector3 = {}
 
@@ -77,3 +92,5 @@ for k,v in ipairs(level) do
         thisLevel[#thisLevel+1] = CreateWall(v.x, v.g, v.z);
     end
 end
+
+print(dump(debug.getinfo(CreateWall)))

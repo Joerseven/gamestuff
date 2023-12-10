@@ -12,14 +12,6 @@ using namespace CSC8503;
 
 const float SERVERHERTZ = 1.0f / 20.0f;
 
-enum ServerFunctions {
-
-};
-
-enum ClientFunctions {
-
-};
-
 struct ServerInfo {
     int playerIds[4];
 };
@@ -30,6 +22,22 @@ struct ServerMessagePacket : public GamePacket {
         type = Server_Message;
         size = sizeof(short);
     }
+};
+
+struct AssignPlayerPacket : public GamePacket {
+    int networkId;
+    int peerId;
+    bool isU;
+    AssignPlayerPacket(int n, int p) {
+        type = Assign_Player;
+        networkId = n;
+        peerId = p;
+        size = sizeof(int) * 2 + sizeof(bool);
+    }
+};
+
+enum Args {
+    integer
 };
 
 // Get me the size of the variadic args
@@ -48,13 +56,13 @@ public:
 
 
 struct RemoteFunctionPacket : public GamePacket {
-    short functionId;
-    size_t parameterSize;
-    char parameters[100];
+    std::string functionName;
+    char parameters[];
     template <typename... Args>
-    RemoteFunctionPacket(short functionId, const Args&... args) {
+    RemoteFunctionPacket(const std::string& name, const Args&... args) {
+        functionName = name;
+        int parameterSize = 0;
         int i = 0;
-        parameterSize = 0;
         ([&] {
             i++;
             std::cout << "Arg = " << args << ", size = " << sizeof(args) << std::endl;
@@ -62,6 +70,38 @@ struct RemoteFunctionPacket : public GamePacket {
             parameterSize += sizeof(args);
         } (), ...);
     }
+};
+
+class RemoteFunctionManager {
+
+    RemoteFunctionManager() {
+    };
+
+    void RegisterFunction(const char* name, std::vector<int>&& arguments) {
+        boundFunctions.insert(std::make_pair(name, arguments));
+    };
+
+    void Receive() {
+
+    };
+
+
+    void SeperateArguments(char* data) {
+
+    }
+
+    void PushArguments() {
+
+    }
+
+    template <typename T, typename ...Args>
+    void BindLocalFunction(T func, const Args&... args) {
+
+    };
+
+    std::unordered_map<std::string, std::vector<int>> boundFunctions;
+private:
+    lua_State* L;
 };
 
 struct AcknowledgePacket : public GamePacket {
@@ -89,7 +129,6 @@ public:
     }
 
     inline void ReceiveAcknowledgement(int playerStatus) {
-
         packets.erase(std::remove_if(packets.begin(), packets.end(), [&](std::pair<int, std::unique_ptr<GamePacket>>& p) {
             return p.first <= playerStatus;
         }), packets.end());

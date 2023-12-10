@@ -6,14 +6,14 @@
 using namespace NCL;
 using namespace CSC8503;
 
-GameServer::GameServer(int onPort, int maxClients, std::function<void(int)>&& cb)	{
+GameServer::GameServer(int onPort, int maxClients, std::function<void(int)>&& cb, std::function<void(int)>&& cb2)	{
 	port		= onPort;
 	clientMax	= maxClients;
 	clientCount = 0;
 	netHandle	= nullptr;
     currentSnapshot = 0;
-
     connectCallback = cb;
+    leaveCallback = cb2;
 
 	Initialise();
 }
@@ -73,14 +73,15 @@ void GameServer::UpdateServer() {
         if (type == ENetEventType::ENET_EVENT_TYPE_CONNECT) {
             std::cout << "Server: New client connected" << std::endl;
             lastPlayerUpdate.insert(std::make_pair(p->incomingPeerID, currentSnapshot));
-            connectCallback(peer);
             idToPeer[peer] = p;
+            connectCallback(peer);
         }
 
         else if (type == ENetEventType::ENET_EVENT_TYPE_DISCONNECT) {
             std::cout << "Server: A client has disconnected" << std::endl;
             lastPlayerUpdate.erase(p->incomingPeerID);
             idToPeer.erase(peer);
+            leaveCallback(peer);
         }
 
         else if (type == ENetEventType::ENET_EVENT_TYPE_RECEIVE) {
