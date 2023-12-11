@@ -95,7 +95,7 @@ void ClientGame::UpdateGame(float dt) {
 
     renderer->Render();
     thisClient->UpdateClient();
-    //Debug::UpdateRenderables(dt);
+    Debug::UpdateRenderables(dt);
 }
 
 void ClientGame::LoadLevel(lua_State *L, int level) {
@@ -140,7 +140,7 @@ void ClientGame::AddObjectFromLua(lua_State *L) {
 
 
 
-    //Debug::DrawBoundingVolume(&g->GetTransform(), const_cast<CollisionVolume *>(g->GetBoundingVolume()), Vector4(1.0, 0.5, 0.2, 1.0));
+    Debug::DrawBoundingVolume(&g->GetTransform(), const_cast<CollisionVolume *>(g->GetBoundingVolume()), Vector4(1.0, 0.5, 0.2, 1.0));
 
     world->AddGameObject(g);
 }
@@ -254,7 +254,7 @@ void ClientGame::AddPlayerObjects(const Vector3 &position) {
         float inverseMass	= 0.5f;
 
         auto character = new GameObject();
-        auto volume  = new SphereVolume(1.0f);
+        auto volume  = new SphereVolume(meshSize);
 
         character->SetBoundingVolume((CollisionVolume*)volume);
 
@@ -267,7 +267,7 @@ void ClientGame::AddPlayerObjects(const Vector3 &position) {
         netObjects[i] = character->GetNetworkObject();
         character->SetActive(false);
 
-        //Debug::DrawBoundingVolume(&character->GetTransform(), (CollisionVolume*)volume, Vector4(1.0, 0.5, 0.2, 1.0));
+        Debug::DrawBoundingVolume(&character->GetTransform(), (CollisionVolume*)volume, Vector4(1.0, 0.5, 0.2, 1.0));
 
         world->AddGameObject(character);
     }

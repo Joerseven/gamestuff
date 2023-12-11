@@ -81,10 +81,21 @@ namespace NCL::Maths {
 
 
         static Vector3 Clamp(const Vector3& input, const Vector3& mins, const Vector3& maxs) {
+
+
+            auto lowX = std::min(mins.x, maxs.x);
+            auto highX = std::max(mins.x, maxs.x);
+
+            auto lowY = std::min(mins.y, maxs.y);
+            auto highY = std::max(mins.y, maxs.y);
+
+            auto lowZ = std::min(mins.z, maxs.z);
+            auto highZ = std::max(mins.z, maxs.z);
+
             return Vector3(
-                    std::clamp(input.x, mins.x, maxs.x),
-                    std::clamp(input.y, mins.y, maxs.y),
-                    std::clamp(input.z, mins.z, maxs.z)
+                    std::clamp(input.x, lowX, highX),
+                    std::clamp(input.y, lowY , highY),
+                    std::clamp(input.z, lowZ, highZ)
             );
         }
 

@@ -422,13 +422,13 @@ Mesh *GameTechRenderer::LoadOBJMesh(const std::string &name) {
     for (size_t index = 0; index < material_ids.size(); index++) {
         Vector3 original[] = {
                 Vector3(attrib.vertices[indices[3 * index].vertex_index * 3],
-                        attrib.vertices[indices[3 * index].vertex_index * 3 + 1],
+                        attrib.vertices[indices[3 * index].vertex_index * 3 + 1] - 0.5,
                         attrib.vertices[indices[3 * index].vertex_index * 3 + 2] * -1),
                 Vector3(attrib.vertices[indices[3 * index + 2].vertex_index * 3],
-                        attrib.vertices[indices[3 * index + 2].vertex_index * 3 + 1],
+                        attrib.vertices[indices[3 * index + 2].vertex_index * 3 + 1] - 0.5,
                         attrib.vertices[indices[3 * index + 2].vertex_index * 3 + 2] * -1),
                 Vector3(attrib.vertices[indices[3 * index + 1].vertex_index * 3],
-                        attrib.vertices[indices[3 * index + 1].vertex_index * 3 + 1],
+                        attrib.vertices[indices[3 * index + 1].vertex_index * 3 + 1] - 0.5,
                         attrib.vertices[indices[3 * index + 1].vertex_index * 3 + 2] * -1)
 
         };

@@ -78,11 +78,11 @@ local function CreateObject()
     return o
 end
 
-local function CreateFloor()
+local function CreateFloor(x,y,z)
     local floor = CreateObject()
     floor.size = Vector3:new(10,10, 10);
-    floor.boundingSize = floor.size * 0.5
-    floor.position = Vector3:new(-5, 0, -5)
+    floor.boundingSize = floor.size
+    floor.position = Vector3:new(x, y, z)
     floor.bounding = "AABBVolume"
     floor.name = "floor"
     floor.mesh = "blockRounded.obj"
@@ -126,7 +126,7 @@ local level = LoadLevelFromImage("leveltest.png", 10)
 for k,v in ipairs(level) do
     local thisLevel = levels[1]
     if (v.r == 0) then
-        thisLevel[#thisLevel+1] = CreateWall(v.x, v.g, v.z);
+        thisLevel[#thisLevel+1] = CreateFloor(v.x, v.g, v.z);
     elseif (v.r == 100) then
         thisLevel[#thisLevel+1] = CreatePickup(v.x, v.g, v.z)
     end
