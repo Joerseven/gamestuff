@@ -28,7 +28,7 @@ void TweenManager::Update(float dt) {
             tweens.erase(it++);
         } else {
             v.current->SetPosition(Vector3::Lerp(v.original.GetPosition(), v.target.GetPosition(), v.elapsed / v.duration));
-            v.current->SetOrientation(Quaternion::Lerp(v.original.GetOrientation(), v.target.GetOrientation(), v.elapsed / v.duration));
+            v.current->SetOrientation(Quaternion::Lerp(v.original.GetOrientation(), v.target.GetOrientation(), v.elapsed / v.duration).Normalised());
             it++;
         }
     }

@@ -108,6 +108,21 @@ inline Vector3 getVec3Field(lua_State* L, const char* key) {
     return v;
 }
 
+inline Vector4 getVec4Field(lua_State* L, const char* key) {
+    Vector4 v;
+    lua_pushstring(L, key);
+    lua_gettable(L, -2);
+
+    v.x = (float)getNumberField(L, "x");
+    v.y = (float)getNumberField(L, "y");
+    v.z = (float)getNumberField(L, "z");
+    v.w = (float)getNumberField(L, "w");
+
+    lua_pop(L, 1);
+
+    return v;
+}
+
 
 
 inline void setIntField(lua_State* L,  const char* key, int value) {

@@ -143,7 +143,88 @@ bool CollisionDetection::RaySphereIntersection(const Ray&r, const Transform& wor
 }
 
 bool CollisionDetection::RayCapsuleIntersection(const Ray& r, const Transform& worldTransform, const CapsuleVolume& volume, RayCollision& collision) {
-	return false;
+    Quaternion oritentation = worldTransform.GetOrientation();
+    Vector3 position = worldTransform.GetPosition();
+
+    Matrix3 transform = Matrix3(oritentation);
+    Matrix3 invTransform = Matrix3(oritentation.Conjugate());
+
+    Vector3 localRayPos = r.GetPosition() - position;
+    Ray tempRay(invTransform * localRayPos, invTransform * r.GetDirection());
+
+    float cylinder = RayCylinderIntersection(tempRay, volume.GetRadius());
+
+    if (cylinder == FLT_MAX) {
+        return false;
+    }
+
+    if (abs(tempRay.GetPosition().y + cylinder * tempRay.GetDirection().y) <= volume.GetHalfHeight()) {
+        return true;
+    }
+
+    Transform tSphere;
+    Vector3 sphereCenter = Vector3(0, volume.GetHalfHeight(), 0);
+    tSphere.SetPosition(sphereCenter);
+    bool upper = RaySphereIntersection(tempRay, tSphere, volume.GetRadius(), collision);
+    tSphere.SetPosition(sphereCenter * -1);
+    bool lower = RaySphereIntersection(tempRay, tSphere, volume.GetRadius(), collision);
+
+    return upper || lower;
+}
+
+// Shamelessly stolen from Jolt
+template <typename T>
+inline int FindRoot(const T inA, const T inB, const T inC, T &outX1, T &outX2) {
+    // Check if this is a linear equation
+    if (inA == T(0))
+    {
+        // Check if this is a constant equation
+        if (inB == T(0))
+            return 0;
+
+        // Linear equation with 1 solution
+        outX1 = outX2 = -inC / inB;
+        return 1;
+    }
+
+    // See Numerical Recipes in C, Chapter 5.6 Quadratic and Cubic Equations
+    T det = (inB * inB) - T(4) * inA * inC;
+    if (det < T(0))
+        return 0;
+    T q = (inB + (inB < 0 ? -1 : 1) * sqrt(det)) / T(-2);
+    outX1 = q / inA;
+    if (q == T(0))
+    {
+        outX2 = outX1;
+        return 1;
+    }
+    outX2 = inC / q;
+    return 2;
+}
+
+float CollisionDetection::RayCylinderIntersection(const Ray& r, float cylinderRadius) {
+    Vector3 origin_xz = Vector3(r.GetPosition().x, 0, r.GetPosition().z);
+    float origin_xz_len_sq = origin_xz.LengthSquared();
+    float r_sq = cylinderRadius * cylinderRadius;
+    if (origin_xz_len_sq  > r_sq) {
+        Vector3 direction_xz = Vector3(r.GetPosition().x, 0, r.GetPosition().z);
+        float a = direction_xz.LengthSquared();
+        float b = 2.0f * Vector3::Dot(origin_xz, direction_xz);
+        float c = origin_xz_len_sq - r_sq;
+        float fraction1, fraction2;
+        if (FindRoot(a , b, c, fraction1, fraction2) == 0) {
+            return FLT_MAX;
+        }
+
+        float fraction = std::min(fraction1, fraction2);
+        if (fraction >= 0.0f) {
+            return fraction;
+        }
+    } else {
+        return 0.0f;
+    }
+
+    return FLT_MAX;
 }
 
 bool CollisionDetection::ObjectIntersection(GameObject* a, GameObject* b, CollisionInfo& collisionInfo) {

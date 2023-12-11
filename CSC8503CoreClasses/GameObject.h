@@ -1,6 +1,7 @@
 #pragma once
 #include "Transform.h"
 #include "CollisionVolume.h"
+#include "Observer.h"
 
 using std::vector;
 
@@ -62,12 +63,13 @@ namespace NCL::CSC8503 {
 			return name;
 		}
 
-		virtual void OnCollisionBegin(GameObject* otherObject) {
-			//std::cout << "OnCollisionBegin event occured!\n";
+		void OnCollisionBegin(GameObject* otherObject) {
+            if (collisionListener) {
+                collisionListener->Trigger(otherObject);
+            }
 		}
 
-		virtual void OnCollisionEnd(GameObject* otherObject) {
-			//std::cout << "OnCollisionEnd event occured!\n";
+		void OnCollisionEnd(GameObject* otherObject) {
 		}
 
 		bool GetBroadphaseAABB(Vector3&outsize) const;
@@ -82,6 +84,7 @@ namespace NCL::CSC8503 {
 			return worldID;
 		}
 
+        Subject<GameObject*>* collisionListener;
         std::string	name;
     protected:
 		Transform			transform;
@@ -97,10 +100,6 @@ namespace NCL::CSC8503 {
         Vector3 broadphaseAABB;
 	};
 }
-
-class DickObject : public NCL::CSC8503::GameObject {
-
-};
 
 using namespace NCL::CSC8503;
 

@@ -7,6 +7,10 @@
 
 
 ClientGame::ClientGame() : controller(*Window::GetWindow()->GetKeyboard(), *Window::GetWindow()->GetMouse()) {
+
+    std::string i1,i2,i3,i4;
+    std::cin >> i1 >> i2 >> i3 >> i4;
+
     world = new GameWorld();
     renderer = new GameTechRenderer(*world);
 
@@ -23,9 +27,7 @@ ClientGame::ClientGame() : controller(*Window::GetWindow()->GetKeyboard(), *Wind
 
     NetworkBase::Initialise();
 
-    netIdCounter = 4;
-
-
+    netIdCounter = 3;
 
     lua_State *L = luaL_newstate();
     luaL_openlibs(L);
@@ -54,7 +56,7 @@ ClientGame::ClientGame() : controller(*Window::GetWindow()->GetKeyboard(), *Wind
 
     tweenManager = new TweenManager();
 
-    StartAsClient(127, 0, 0, 1);
+    StartAsClient((char)std::stoi(i1), (char)std::stoi(i2),(char)std::stoi(i3), (char)std::stoi(i4));
 
     recieverAcknowledger = new RecieverAcknowledger(thisClient);
     senderAcknowledger = new SenderAcknowledger(thisClient);
@@ -110,7 +112,7 @@ void ClientGame::LoadLevel(lua_State *L, int level) {
 
 void ClientGame::AddObjectFromLua(lua_State *L) {
     // object table is on top of the stack
-    GameObject* g = new GameObject();
+    auto g = new GameObject(getStringField(L, "name"));
     g->SetActive(getBool(L, "active"));
     Vector3 size = getVec3Field(L, "size");
     Vector3 position = getVec3Field(L, "position");
@@ -124,6 +126,7 @@ void ClientGame::AddObjectFromLua(lua_State *L) {
 
     if (getBool(L, "network")) {
         g->SetNetworkObject(new NetworkObject(*g, ++netIdCounter));
+        netObjects.push_back(g->GetNetworkObject());
     }
 
     auto t = getStringField(L, "texture");
@@ -132,6 +135,8 @@ void ClientGame::AddObjectFromLua(lua_State *L) {
                                         GetMesh(getStringField(L, "mesh")),
                                         std::string(t) == std::string("none") ? nullptr : GetTexture(t),
                                         GetShader(getStringField(L, "shader"))));
+
+    g->GetRenderObject()->SetColour(getVec4Field(L, "color"));
 
 
 
@@ -245,7 +250,7 @@ void ClientGame::AddPlayerObjects(const Vector3 &position) {
     netObjects.resize(4);
 
     for (int i = 0; i < 4; i++) {
-        float meshSize		= 1.0f;
+        float meshSize		= 5.0f;
         float inverseMass	= 0.5f;
 
         auto character = new GameObject();
@@ -258,7 +263,7 @@ void ClientGame::AddPlayerObjects(const Vector3 &position) {
                 .SetPosition(position);
 
         character->SetNetworkObject(new NetworkObject(*character, i));
-        character->SetRenderObject(new RenderObject(&character->GetTransform(), GetMesh("Goat"), nullptr, GetShader("scene")));
+        character->SetRenderObject(new RenderObject(&character->GetTransform(), GetMesh("alien.obj"), nullptr, GetShader("scene")));
         netObjects[i] = character->GetNetworkObject();
         character->SetActive(false);
 
@@ -303,7 +308,15 @@ Texture *ClientGame::GetTexture(const std::string &texture) {
 
 Mesh *ClientGame::GetMesh(const std::string &mesh) {
     if (meshes.find(mesh) == meshes.end()) {
-        auto p = renderer->LoadMesh(mesh + std::string(".msh"));
+
+        Mesh* p;
+
+        if (mesh.substr(mesh.size() - 3) == "obj") {
+            p = renderer->LoadOBJMesh(mesh);
+        } else {
+            p = renderer->LoadMesh(mesh);
+        }
+
         meshes.insert(std::make_pair(mesh, p));
         return p;
     }
@@ -361,6 +374,8 @@ void ClientGame::UpdateCharacterDirection() {
 }
 
 int main() {
+
+
     Window*w = Window::CreateGameWindow("CSC8503 Game technology!", 1920, 1080);
 
     if (!w->HasInitialised()) {

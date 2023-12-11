@@ -4,6 +4,7 @@
 #include "Camera.h"
 #include "TextureLoader.h"
 #include "MshLoader.h"
+#include "Assets.h"
 using namespace NCL;
 using namespace Rendering;
 using namespace CSC8503;
@@ -390,7 +391,7 @@ Mesh *GameTechRenderer::LoadOBJMesh(const std::string &name) {
 
     std::string err;
 
-    bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, name.c_str(), MODELPATH);
+    bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, std::string(Assets::MESHDIR + name).c_str(), Assets::MESHDIR.c_str());
 
     if (!err.empty()) {
         std::cerr << err << std::endl;
@@ -400,8 +401,13 @@ Mesh *GameTechRenderer::LoadOBJMesh(const std::string &name) {
         std::cerr << "Unable to load mesh file: " << name << std::endl;
     }
 
-    const std::vector<tinyobj::index_t>& indices = shapes[0].mesh.indices;
-    const std::vector<int>& material_ids = shapes[0].mesh.material_ids;
+    std::vector<tinyobj::index_t> indices;
+    std::vector<int> material_ids;
+
+    for (auto i = 0; i < shapes.size(); i++) {
+        indices.insert(indices.end(), shapes[i].mesh.indices.begin(), shapes[i].mesh.indices.end());
+        material_ids.insert(material_ids.end(), shapes[i].mesh.material_ids.begin(), shapes[i].mesh.material_ids.end());
+    }
 
     auto vertices = std::vector<Vector3>();
     auto normals = std::vector<Vector3>();
@@ -417,13 +423,14 @@ Mesh *GameTechRenderer::LoadOBJMesh(const std::string &name) {
         Vector3 original[] = {
                 Vector3(attrib.vertices[indices[3 * index].vertex_index * 3],
                         attrib.vertices[indices[3 * index].vertex_index * 3 + 1],
-                        attrib.vertices[indices[3 * index].vertex_index * 3 + 2]),
-                Vector3(attrib.vertices[indices[3 * index + 1].vertex_index * 3],
-                        attrib.vertices[indices[3 * index + 1].vertex_index * 3 + 1],
-                        attrib.vertices[indices[3 * index + 1].vertex_index * 3 + 2]),
+                        attrib.vertices[indices[3 * index].vertex_index * 3 + 2] * -1),
                 Vector3(attrib.vertices[indices[3 * index + 2].vertex_index * 3],
                         attrib.vertices[indices[3 * index + 2].vertex_index * 3 + 1],
-                        attrib.vertices[indices[3 * index + 2].vertex_index * 3 + 2])
+                        attrib.vertices[indices[3 * index + 2].vertex_index * 3 + 2] * -1),
+                Vector3(attrib.vertices[indices[3 * index + 1].vertex_index * 3],
+                        attrib.vertices[indices[3 * index + 1].vertex_index * 3 + 1],
+                        attrib.vertices[indices[3 * index + 1].vertex_index * 3 + 2] * -1)
+
         };
 
         vertices.push_back(original[0]);

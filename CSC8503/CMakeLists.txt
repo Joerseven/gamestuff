@@ -5,22 +5,20 @@ set(PROJECT_NAME CSC8503)
 ################################################################################
 set(Header_Files
     "GameTechRenderer.h"
-    "NetworkedGame.h"
-    "NetworkPlayer.h"
-    "StateGameObject.h"
-    "TutorialGame.h"
+#    "NetworkedGame.h"
+#    "NetworkPlayer.h"
+#    "StateGameObject.h"
+#    "TutorialGame.h"
 )
 source_group("Header Files" FILES ${Header_Files})
 
 set(Source_Files
     "GameTechRenderer.cpp"
-    "Main.cpp"
-    "NetworkedGame.cpp"
-    "NetworkPlayer.cpp"
-    "StateGameObject.cpp"
-    "TutorialGame.cpp"
-	"../Client/ClientGame.cpp"
-	"../Server/ServerGame.cpp"
+#    "Main.cpp"
+#    "NetworkedGame.cpp"
+#    "NetworkPlayer.cpp"
+#    "StateGameObject.cpp"
+#    "TutorialGame.cpp"
 )
 
 if(USE_VULKAN)

@@ -65,6 +65,8 @@ namespace NCL {
 				return inverseInteriaTensor;
 			}
 
+            bool isTrigger;
+
 		protected:
 			const CollisionVolume* volume;
 			Transform*		transform;

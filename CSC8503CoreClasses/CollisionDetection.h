@@ -110,6 +110,8 @@ namespace NCL {
 
 		static Vector3 Unproject(const Vector3& screenPos, const PerspectiveCamera& cam);
 
+        static float RayCylinderIntersection(const Ray &r, float cylinderRadius);
+
 		static Vector3		UnprojectScreenPosition(Vector3 position, float aspect, float fov, const PerspectiveCamera&c);
 		static Matrix4		GenerateInverseProjection(float aspect, float fov, float nearPlane, float farPlane);
 		static Matrix4		GenerateInverseView(const Camera &c);
@@ -119,6 +121,8 @@ namespace NCL {
 	private:
 		CollisionDetection()	{}
 		~CollisionDetection()	{}
-	};
+
+
+    };
 }
 

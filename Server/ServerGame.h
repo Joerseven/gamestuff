@@ -79,6 +79,8 @@ protected:
     void CatchupPlayerJoined(int peerId);
 
     void AssignPlayer(NetworkObject *obj, int peerId);
+
+    void AttachCoinListener(GameObject *player);
 };
 
 

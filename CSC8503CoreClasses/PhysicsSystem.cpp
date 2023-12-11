@@ -103,9 +103,9 @@ void PhysicsSystem::Update(float dt) {
         ClearForces();
     }
 
-
-
 	//Once we've finished with the forces, reset them to zero
+
+
 
 	UpdateCollisionList(); //Remove any old collisions
 
@@ -145,8 +145,15 @@ OnCollisionBegin / OnCollisionEnd functions (removing health when hit by a
 rocket launcher, gaining a point when the player hits the gold coin, and so on).
 */
 void PhysicsSystem::UpdateCollisionList() {
-	for (std::set<CollisionDetection::CollisionInfo>::iterator i = allCollisions.begin(); i != allCollisions.end(); ) {
-		if ((*i).framesLeft == numCollisionFrames) {
+	for (auto i = allCollisions.begin(); i != allCollisions.end(); ) {
+
+
+        if (!i->a->IsActive() || !i->b->IsActive()) {
+            allCollisions.erase(i);
+            return;
+        }
+
+        if ((*i).framesLeft == numCollisionFrames) {
 			i->a->OnCollisionBegin(i->b);
 			i->b->OnCollisionBegin(i->a);
 		}
@@ -188,12 +195,12 @@ void PhysicsSystem::BasicCollisionDetection() {
     gameWorld.GetObjectIterators(first, last);
 
     for (auto i = first; i != last; i++) {
-        if ((*i)->GetPhysicsObject() == nullptr) {
+        if ((*i)->GetPhysicsObject() == nullptr || !(*i)->IsActive()) {
             continue;
         }
 
         for (auto j = i+1; j != last; j++) {
-            if ((*j)->GetPhysicsObject() == nullptr) {
+            if ((*j)->GetPhysicsObject() == nullptr || !(*j)->IsActive()) {
                 continue;
             }
             CollisionDetection::CollisionInfo info;
@@ -383,7 +390,7 @@ void PhysicsSystem::IntegrateVelocity(float dt) {
 
     for (auto i = first; i != last; i++) {
 
-        if (!((*i)->IsActive())) {
+        if (!(*i)->IsActive()) {
             continue;
         }
 

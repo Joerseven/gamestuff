@@ -26,7 +26,7 @@ ServerGame::ServerGame() {
 
     forceMagnitude = 10.0f;
     timeToNextPacket  = 0.0f;
-    netIdCounter = 4; // Players added will bring it up to 4.
+    netIdCounter = 3; // Players added will bring it up to 4.
 
     physics->UseGravity(true);
 
@@ -136,6 +136,7 @@ void ServerGame::BroadcastSnapshot() {
 
 void ServerGame::InitWorld(lua_State *L) {
     AddPlayerObjects({0,0,0});
+
 }
 
 void DebugPackets(int type, GamePacket *payload, int source) {
@@ -188,6 +189,17 @@ void ServerGame::CatchupPlayerJoined(int peerId) {
     }
 }
 
+void ServerGame::AttachCoinListener(GameObject* player) {
+    auto observer = new Observer<GameObject*>([this](GameObject* item){
+        if (item->name == "coin") {
+            SetActiveNetworkObject(item->GetNetworkObject(), false);
+            std::cout << "Is triggering" << std::endl;
+        }
+    });
+
+    player->collisionListener->Attach(observer);
+}
+
 void ServerGame::AssignPlayer(NetworkObject* obj, int peerId) {
     FunctionPacket p(AssignPlayerFunction{obj->networkID, peerId}, Functions::AssignPlayerFunction);
     playerSenders[peerId]->RequireAcknowledgement(p);
@@ -212,6 +224,7 @@ GameObject *ServerGame::CreatePlayer(int peerId) {
     playerMap.insert(std::make_pair(peerId, freeIndex));
 
     SetActiveNetworkObject(players[freeIndex]->GetNetworkObject(), true);
+    AttachCoinListener(players[freeIndex]);
     AssignPlayer(players[freeIndex]->GetNetworkObject(), peerId);
     CatchupPlayerJoined(peerId);
 
@@ -249,7 +262,7 @@ void ServerGame::LoadLevel(lua_State *L, int level) {
 
 void ServerGame::AddObjectFromLua(lua_State *L) {
     // object table is on top of the stack
-    GameObject* g = new GameObject();
+    GameObject* g = new GameObject(getStringField(L, "name"));
     g->SetActive(getBool(L, "active"));
     Vector3 size = getVec3Field(L, "size");
     Vector3 position = getVec3Field(L, "position");
@@ -339,6 +352,10 @@ void ServerGame::AddPlayerObjects(const Vector3 &position) {
 
         character->SetNetworkObject(new NetworkObject(*character, i));
         netObjects.push_back(character->GetNetworkObject());
+
+        character->collisionListener = new Subject<GameObject*>();
+
+        character->name = "Player " + std::to_string(i);
 
         character->SetActive(false);
 

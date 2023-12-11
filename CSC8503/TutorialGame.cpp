@@ -273,6 +273,7 @@ void TutorialGame::InitWorld() {
 
 	//InitGameExamples();
 	InitDefaultFloor();
+    AddCapsuleToWorld(Vector3(0,0,0));
     //testStateObject = AddStateObjectToWorld(Vector3(0, 10, 0));
 }
 
@@ -376,6 +377,26 @@ GameObject* TutorialGame::AddPlayerToWorld(const Vector3& position) {
 	world->AddGameObject(character);
 
 	return character;
+}
+
+GameObject* TutorialGame::AddCapsuleToWorld(const Vector3& position) {
+    GameObject* capsule = new GameObject();
+    CapsuleVolume* volume = new CapsuleVolume(0.5, 1);
+
+    capsule->SetBoundingVolume((CollisionVolume*)volume);
+    capsule->GetTransform()
+        .SetScale(Vector3(1.0f, 1.0f, 1.0f))
+        .SetPosition(position);
+
+    capsule->SetRenderObject(new RenderObject(&capsule->GetTransform(), capsuleMesh, nullptr, basicShader));
+    capsule->SetPhysicsObject(new PhysicsObject(&capsule->GetTransform(), capsule->GetBoundingVolume()));
+
+    capsule->GetPhysicsObject()->SetInverseMass(0.0f);
+    capsule->GetPhysicsObject()->InitSphereInertia();
+
+    world->AddGameObject(capsule);
+
+    return capsule;
 }
 
 GameObject* TutorialGame::AddEnemyToWorld(const Vector3& position) {

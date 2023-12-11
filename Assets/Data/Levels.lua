@@ -14,6 +14,26 @@ function dump(o)
     end
 end
 
+Vector4 = {}
+
+function Vector4:new(x,y,z,w)
+    local v = {}
+    setmetatable(v, self)
+    v.x = x
+    v.y = y
+    v.z = z
+    v.w = w
+    return v
+end
+
+Vector4.__tostring = function(vec)
+    return vec.x .. vec.y .. vec.z .. vec.w
+end
+
+Vector4.__mul = function(vec, scale)
+    return Vector4:new(vec.x * scale, vec.y * scale, vec.z * scale, vec.w * scale)
+end
+
 
 Vector3 = {}
 
@@ -36,11 +56,13 @@ Vector3.__mul = function(vec, scale)
 end
 
 local base = {
-    mesh = "Cube",
+    name = "",
+    mesh = "Cube.msh",
     shader = "scene",
     texture = "none",
     bounding = "SphereVolume",
     mass = "0",
+    color = Vector4:new(1.0,1.0,1.0,1.0),
     active = true,
     boundingSize = 1.0,
     network = false,
@@ -62,6 +84,7 @@ local function CreateFloor()
     floor.boundingSize = floor.size * 0.5
     floor.position = Vector3:new(-5, 0, -5)
     floor.bounding = "AABBVolume"
+    floor.name = "floor"
     floor.texture = "checkerboard"
     return floor
 end
@@ -70,9 +93,23 @@ local function CreateWall(x, y, z)
     local wall = CreateObject()
     wall.size = Vector3:new(10, y + 10, 10)
     wall.bounding = "AABBVolume"
+    wall.name = "wall"
     wall.boundingSize = wall.size * 0.5;
     wall.position = Vector3:new(x, 5 + y/2, z);
     return wall
+end
+
+local function CreatePickup(x,y,z)
+    local pickup = CreateObject()
+    pickup.mesh = "coinGold.obj";
+    pickup.size = Vector3:new(5, 5, 5)
+    pickup.bounding = "SphereVolume"
+    pickup.boundingSize = 0.5;
+    pickup.position = Vector3:new(x,y + 2 ,z)
+    pickup.color = Vector4:new(255/255, 195/255, 20/255, 1.0)
+    pickup.name = "coin";
+    pickup.network = true;
+    return pickup
 end
 
 spawnPoint = Vector3:new(0, 10, 0)
@@ -90,5 +127,7 @@ for k,v in ipairs(level) do
     local thisLevel = levels[1]
     if (v.r == 0) then
         thisLevel[#thisLevel+1] = CreateWall(v.x, v.g, v.z);
+    elseif (v.r == 100) then
+        thisLevel[#thisLevel+1] = CreatePickup(v.x, v.g, v.z)
     end
 end
