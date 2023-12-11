@@ -80,12 +80,12 @@ end
 
 local function CreateFloor()
     local floor = CreateObject()
-    floor.size = Vector3:new(200, 2, 200);
+    floor.size = Vector3:new(10,10, 10);
     floor.boundingSize = floor.size * 0.5
     floor.position = Vector3:new(-5, 0, -5)
     floor.bounding = "AABBVolume"
     floor.name = "floor"
-    floor.texture = "checkerboard"
+    floor.mesh = "blockRounded.obj"
     return floor
 end
 
