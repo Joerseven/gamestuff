@@ -337,7 +337,7 @@ void ServerGame::AddPlayerObjects(const Vector3 &position) {
         float inverseMass	= 0.5f;
 
         auto character = new GameObject();
-        auto volume  = new SphereVolume(1.0f);
+        auto volume  = new AABBVolume(Vector3(meshSize * 0.5, meshSize * 0.5, meshSize * 0.5));
 
         character->SetBoundingVolume((CollisionVolume*)volume);
 

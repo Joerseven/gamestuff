@@ -80,8 +80,8 @@ end
 
 local function CreateFloor(x,y,z)
     local floor = CreateObject()
-    floor.size = Vector3:new(10,10, 10);
-    floor.boundingSize = floor.size
+    floor.size = Vector3:new(0.5,0.5, 0.5);
+    floor.boundingSize = floor.size * 0.5
     floor.position = Vector3:new(x, y, z)
     floor.bounding = "AABBVolume"
     floor.name = "floor"
@@ -112,7 +112,7 @@ local function CreatePickup(x,y,z)
     return pickup
 end
 
-spawnPoint = Vector3:new(0, 10, 0)
+spawnPoint = Vector3:new(0, 20, 0)
 
 levels = {
     [1] = {

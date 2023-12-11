@@ -78,8 +78,8 @@ void ClientGame::UpdateGame(float dt) {
     UpdateCharacterDirection();
     GetClientInput();
 
-    //world->GetMainCamera().UpdateCamera(dt);
-    UpdateCamera();
+    world->GetMainCamera().UpdateCamera(dt);
+    //UpdateCamera();
 
 
     //Debug::DrawLine(Vector3(500, 0, 500), Vector3(500, 100, 500), Vector4(1, 0, 0, 1));
@@ -131,12 +131,12 @@ void ClientGame::AddObjectFromLua(lua_State *L) {
 
     auto t = getStringField(L, "texture");
 
-    g->SetRenderObject(new RenderObject(&g->GetTransform(),
-                                        GetMesh(getStringField(L, "mesh")),
-                                        std::string(t) == std::string("none") ? nullptr : GetTexture(t),
-                                        GetShader(getStringField(L, "shader"))));
+    //g->SetRenderObject(new RenderObject(&g->GetTransform(),
+                                        //GetMesh(getStringField(L, "mesh")),
+                                        //std::string(t) == std::string("none") ? nullptr : GetTexture(t),
+                                        //GetShader(getStringField(L, "shader"))));
 
-    g->GetRenderObject()->SetColour(getVec4Field(L, "color"));
+    //g->GetRenderObject()->SetColour(getVec4Field(L, "color"));
 
 
 
@@ -250,20 +250,20 @@ void ClientGame::AddPlayerObjects(const Vector3 &position) {
     netObjects.resize(4);
 
     for (int i = 0; i < 4; i++) {
-        float meshSize		= 5.0f;
+        float meshSize		= 1.0f;
         float inverseMass	= 0.5f;
 
         auto character = new GameObject();
-        auto volume  = new SphereVolume(meshSize);
+        auto volume  = new AABBVolume(Vector3(meshSize * 0.5, meshSize * 0.5, meshSize * 0.5));
 
         character->SetBoundingVolume((CollisionVolume*)volume);
 
         character->GetTransform()
-                .SetScale(Vector3(meshSize, meshSize, meshSize))
+                .SetScale(Vector3(meshSize*4, meshSize*4, meshSize*4))
                 .SetPosition(position);
 
         character->SetNetworkObject(new NetworkObject(*character, i));
-        character->SetRenderObject(new RenderObject(&character->GetTransform(), GetMesh("alien.obj"), nullptr, GetShader("scene")));
+        //character->SetRenderObject(new RenderObject(&character->GetTransform(), GetMesh("alien.obj"), nullptr, GetShader("scene")));
         netObjects[i] = character->GetNetworkObject();
         character->SetActive(false);
 
