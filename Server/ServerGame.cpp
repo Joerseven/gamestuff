@@ -86,6 +86,11 @@ void ServerGame::UpdateGame(float dt) {
 
 void ServerGame::UpdatePlayers() {
     for (auto it = playerControls.begin(); it != playerControls.end(); it++) {
+
+        if (playerMap.find(it->first) == playerMap.end()) {
+            return;
+        }
+
         auto player = players[playerMap[it->first]];
         auto &pressed = it->second;
         float mag = 0.2f;
@@ -168,6 +173,27 @@ void ServerGame::ReceivePacket(int type, GamePacket *payload, int source) {
     }
 }
 
+void ServerGame::SetActiveNetworkObject(NetworkObject* networkObject, bool active) {
+    for (auto& ps : playerSenders) {
+        networkObject->object.SetActive(active);
+        FunctionPacket p(SetNetworkObjectActive{networkObject->networkID, networkObject->object.IsActive()}, Functions::SetNetworkObjectActive);
+        server->SendPacket(ps.second->RequireAcknowledgement(p), ps.first);
+    }
+}
+
+void ServerGame::CatchupPlayerJoined(int peerId) {
+    for (auto& n : netObjects) {
+        FunctionPacket p(SetNetworkObjectActive{n->networkID, n->object.IsActive()}, Functions::SetNetworkObjectActive);
+        server->SendPacket(playerSenders[peerId]->RequireAcknowledgement(p), peerId);
+    }
+}
+
+void ServerGame::AssignPlayer(NetworkObject* obj, int peerId) {
+    FunctionPacket p(AssignPlayerFunction{obj->networkID, peerId}, Functions::AssignPlayerFunction);
+    playerSenders[peerId]->RequireAcknowledgement(p);
+    server->SendPacket(p, peerId);
+}
+
 GameObject *ServerGame::CreatePlayer(int peerId) {
 
     int freeIndex = 0;
@@ -184,33 +210,25 @@ GameObject *ServerGame::CreatePlayer(int peerId) {
     playerSenders.insert(std::make_pair(peerId, new SenderAcknowledger(server, peerId)));
     playerRecievers.insert(std::make_pair(peerId, new RecieverAcknowledger(server, peerId)));
     playerMap.insert(std::make_pair(peerId, freeIndex));
-    players[freeIndex]->SetActive(true);
 
-    for (auto& s : playerSenders) {
-        FunctionPacket p(AssignPlayerFunction{players[freeIndex]->GetNetworkObject()->networkID, peerId, peerId == s.first}, Functions::AssignPlayerFunction);
-        s.second->RequireAcknowledgement(p);
-        server->SendPacket(p, s.first);
-    }
-
-    for (auto n : netObjects) {
-        FunctionPacket p(SetNetworkObjectActive{n->networkID, n->object.IsActive()}, Functions::SetNetworkObjectActive);
-        server->SendPacket(playerSenders[peerId]->RequireAcknowledgement(p), peerId);
-    }
+    SetActiveNetworkObject(players[freeIndex]->GetNetworkObject(), true);
+    AssignPlayer(players[freeIndex]->GetNetworkObject(), peerId);
+    CatchupPlayerJoined(peerId);
 
     std::cout << "Player added successfully!" << std::endl;
-
-    serverInfo.playerIds[freeIndex] = peerId;
 
     return players[freeIndex];
 }
 
 void ServerGame::PlayerLeft(int peerId) {
 
-    players[playerMap[peerId]]->SetActive(false);
+    std::cout << "Leaving rotation is: " << players[playerMap[peerId]]->GetTransform().GetOrientation() << std::endl;
+
+    SetActiveNetworkObject(players[playerMap[peerId]]->GetNetworkObject(), false);
+
     serverInfo.playerIds[playerMap[peerId]] = -1;
     playerSenders.erase(peerId);
     playerRecievers.erase(peerId);
-
     playerMap.erase(peerId);
 
     std::cout << "Player removed successfully" << std::endl;

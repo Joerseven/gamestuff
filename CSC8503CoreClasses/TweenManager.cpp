@@ -6,12 +6,11 @@
 
 void TweenManager::Create(Transform* character, const Transform& target, float duration) {
     TweenInfo t;
-    t.original = Transform(*character);
+    t.original = Transform(*character); // Copying this boi
     t.current = character;
     t.target = target;
     t.duration = duration;
     t.elapsed = 0.0f;
-    // Must be an easier way to do this
     tweens[character] = t;
 //    if (tweens.find(character) == tweens.end()) {
 //        tweens.insert(std::make_pair(character, t));

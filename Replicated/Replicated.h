@@ -34,7 +34,6 @@ namespace Functions {
 struct AssignPlayerFunction {
     int networkId;
     int peerId;
-    bool isThisPlayer;
 };
 
 struct SetNetworkObjectActive {

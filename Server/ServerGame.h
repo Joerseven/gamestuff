@@ -73,6 +73,12 @@ protected:
     ServerInfo serverInfo;
 
     void LoadLevel(lua_State *L, int level);
+
+    void SetActiveNetworkObject(NetworkObject* networkObject, bool active);
+
+    void CatchupPlayerJoined(int peerId);
+
+    void AssignPlayer(NetworkObject *obj, int peerId);
 };
 
 

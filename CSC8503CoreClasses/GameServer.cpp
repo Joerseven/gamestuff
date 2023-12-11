@@ -78,8 +78,8 @@ void GameServer::UpdateServer() {
 
         else if (type == ENetEventType::ENET_EVENT_TYPE_DISCONNECT) {
             std::cout << "Server: A client has disconnected" << std::endl;
-            idToPeer.erase(peer);
             leaveCallback(peer);
+            idToPeer.erase(peer);
         }
 
         else if (type == ENetEventType::ENET_EVENT_TYPE_RECEIVE) {
