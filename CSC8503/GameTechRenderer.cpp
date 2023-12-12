@@ -339,7 +339,7 @@ void GameTechRenderer::RenderCamera() {
         auto prevScale = b.location->GetScale();
         Vector3 newScale;
         if (b.volume->type == VolumeType::AABB) {
-            newScale = ((AABBVolume*)b.volume)->GetHalfDimensions();
+            newScale = ((AABBVolume*)b.volume)->GetHalfDimensions() * 2;
         } else {
             auto sf = ((SphereVolume*)b.volume)->GetRadius();
             newScale = Vector3(sf, sf, sf);
@@ -382,7 +382,7 @@ Mesh* GameTechRenderer::LoadMesh(const std::string& name) {
 	return mesh;
 }
 
-Mesh *GameTechRenderer::LoadOBJMesh(const std::string &name) {
+Mesh *GameTechRenderer::LoadOBJMesh(const std::string &name, Vector3 localOffset) {
 
     auto mesh = new OGLMesh();
     tinyobj::attrib_t attrib;
@@ -423,13 +423,13 @@ Mesh *GameTechRenderer::LoadOBJMesh(const std::string &name) {
         Vector3 original[] = {
                 Vector3(attrib.vertices[indices[3 * index].vertex_index * 3],
                         attrib.vertices[indices[3 * index].vertex_index * 3 + 1],
-                        attrib.vertices[indices[3 * index].vertex_index * 3 + 2] * -1),
+                        attrib.vertices[indices[3 * index].vertex_index * 3 + 2] * -1) + localOffset,
                 Vector3(attrib.vertices[indices[3 * index + 2].vertex_index * 3],
                         attrib.vertices[indices[3 * index + 2].vertex_index * 3 + 1],
-                        attrib.vertices[indices[3 * index + 2].vertex_index * 3 + 2] * -1),
+                        attrib.vertices[indices[3 * index + 2].vertex_index * 3 + 2] * -1) + localOffset,
                 Vector3(attrib.vertices[indices[3 * index + 1].vertex_index * 3],
                         attrib.vertices[indices[3 * index + 1].vertex_index * 3 + 1],
-                        attrib.vertices[indices[3 * index + 1].vertex_index * 3 + 2] * -1)
+                        attrib.vertices[indices[3 * index + 1].vertex_index * 3 + 2] * -1) + localOffset
 
         };
 

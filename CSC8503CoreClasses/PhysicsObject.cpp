@@ -12,6 +12,8 @@ PhysicsObject::PhysicsObject(Transform* parentTransform, const CollisionVolume* 
 	elasticity	= 0.8f;
 	friction	= 0.8f;
 
+    restitutionModifier = 1.0f;
+
     isTrigger = false;
 
 }

@@ -18,7 +18,7 @@ namespace NCL {
 			~GameTechRenderer();
 
 			Mesh*		LoadMesh(const std::string& name);
-            Mesh*       LoadOBJMesh(const std::string& name);
+            Mesh*       LoadOBJMesh(const std::string& name, Vector3 localOffset = {0,0,0});
 			Texture*	LoadTexture(const std::string& name);
 			Shader*		LoadShader(const std::string& vertex, const std::string& fragment);
 

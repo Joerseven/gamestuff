@@ -45,7 +45,7 @@ protected:
     void AddVolume(GameObject* g, const std::string& volumeType, lua_State *L);
 
     Texture* GetTexture(const std::string& texture);
-    Mesh* GetMesh(const std::string& mesh);
+    Mesh* GetMesh(const std::string& mesh, float offset = -0.5f);
     Shader* GetShader(const std::string& shader);
 
     int netIdCounter = 0;

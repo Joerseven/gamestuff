@@ -66,6 +66,7 @@ local base = {
     active = true,
     boundingSize = 1.0,
     network = false,
+    modelOffset = -0.5,
     position = Vector3:new(0, 0, 0),
     size = Vector3:new(1, 1, 1)
 }
@@ -80,23 +81,13 @@ end
 
 local function CreateFloor(x,y,z)
     local floor = CreateObject()
-    floor.size = Vector3:new(0.5,0.5, 0.5);
+    floor.size = Vector3:new(5,5, 5);
     floor.boundingSize = floor.size * 0.5
     floor.position = Vector3:new(x, y, z)
     floor.bounding = "AABBVolume"
     floor.name = "floor"
     floor.mesh = "blockRounded.obj"
     return floor
-end
-
-local function CreateWall(x, y, z)
-    local wall = CreateObject()
-    wall.size = Vector3:new(10, y + 10, 10)
-    wall.bounding = "AABBVolume"
-    wall.name = "wall"
-    wall.boundingSize = wall.size * 0.5;
-    wall.position = Vector3:new(x, 5 + y/2, z);
-    return wall
 end
 
 local function CreatePickup(x,y,z)
@@ -106,28 +97,63 @@ local function CreatePickup(x,y,z)
     pickup.bounding = "SphereVolume"
     pickup.boundingSize = 0.5;
     pickup.position = Vector3:new(x,y + 2 ,z)
-    pickup.color = Vector4:new(255/255, 195/255, 20/255, 1.0)
     pickup.name = "coin";
     pickup.network = true;
     return pickup
 end
 
-spawnPoint = Vector3:new(0, 20, 0)
+local function CreateGoalPlatform(x,y,z)
+    local goalPlatform = CreateObject();
+    goalPlatform.mesh = "blockMoving.obj"
+    goalPlatform.size = Vector3:new(5,5,5)
+    goalPlatform.bounding = "AABBVolume"
+    goalPlatform.boundingSize = goalPlatform.size * 0.5
+    goalPlatform.boundingSize.y = goalPlatform.boundingSize.y * 0.25
+    goalPlatform.network = true
+    goalPlatform.position = Vector3:new(x,y,z)
+    goalPlatform.name = "movingplatform"
+    goalPlatform.modelOffset = -0.125
+    return goalPlatform
+end
+
+local function CreateFlag(x,y,z)
+    local flag = CreateObject()
+    flag.mesh = "flag.obj"
+    flag.position = Vector3(x,y,z)
+    flag.size = Vector3:new(5,5,5)
+    flag.bounding = "AABBVolume"
+    flag.boundingSize = flag.size * 0.5;
+    flag.network = true
+    flag.name = "flag"
+    return flag
+end
+
+itemIds = {
+    [0] = CreateFloor,
+    [100] = CreatePickup,
+    [200] = CreateGoalPlatform,
+    [150] = CreateFlag
+
+}
+
+spawnPoints = {
+    Vector3:new(0, 10, 0),
+    Vector3:new(200, 10, 200),
+    Vector3:new(200, 10, 0),
+    Vector3:new(0, 10, 200)
+}
 
 levels = {
-    [1] = {
-        CreateFloor(),
-    }
+    [1] = {}
 }
 
 -- second argument is map ratio, difference between tilemap size and map size
-local level = LoadLevelFromImage("leveltest.png", 10)
+local level = LoadLevelFromImage("leveltest.png", 5)
+local level2 = LoadLevelFromImage("levelitems.png", 5)
 
 for k,v in ipairs(level) do
     local thisLevel = levels[1]
-    if (v.r == 0) then
-        thisLevel[#thisLevel+1] = CreateFloor(v.x, v.g, v.z);
-    elseif (v.r == 100) then
-        thisLevel[#thisLevel+1] = CreatePickup(v.x, v.g, v.z)
+    if itemIds[v.r] then
+        thisLevel[#thisLevel+1] = itemIds[v.r](v.x, v.g, v.z)
     end
 end

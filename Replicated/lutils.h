@@ -87,20 +87,26 @@ inline Vector3 getVec3Field(lua_State* L, const char* key) {
     lua_pushstring(L, key);
     lua_gettable(L, -2);
     // -1 table -2 table
-    lua_pushstring(L, "x");
-    lua_gettable(L, -2);
-    v.x = (float)lua_tonumber(L, -1);
+
+    v.x = (float)getNumberField(L, "x");
+    v.y = (float)getNumberField(L, "y");
+    v.z = (float)getNumberField(L, "z");
+
+    // Pop the vector table
     lua_pop(L, 1);
 
-    lua_pushstring(L, "y");
-    lua_gettable(L, -2);
-    v.y = (float)lua_tonumber(L, -1);
-    lua_pop(L, 1);
+    return v;
+}
 
-    lua_pushstring(L, "z");
+inline Vector3 getVec3Field(lua_State* L, int key) {
+    Vector3 v;
+    lua_pushinteger(L, key);
     lua_gettable(L, -2);
-    v.z = (float)lua_tonumber(L, -1);
-    lua_pop(L, 1);
+    // -1 table -2 table
+
+    v.x = (float)getNumberField(L, "x");
+    v.y = (float)getNumberField(L, "y");
+    v.z = (float)getNumberField(L, "z");
 
     // Pop the vector table
     lua_pop(L, 1);
@@ -205,8 +211,8 @@ int LoadLevelFromImage(lua_State *L) {
             setIntField(L, "r", r);
             setIntField(L, "g", g);
             setIntField(L, "b", b);
-            setFloatField(L, "x", x * 0.25 * mapRatio - offsetX);
-            setFloatField(L, "z", z * 0.25 * mapRatio - offsetZ);
+            setFloatField(L, "x", x * mapRatio);// * 0.25 * mapRatio - offsetX);
+            setFloatField(L, "z", z * mapRatio);// * 0.25 * mapRatio - offsetZ);
             lua_rawseti(L, -2, tableCounter++);
         }
     }

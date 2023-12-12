@@ -256,7 +256,7 @@ void PhysicsSystem::ImpulseResolveCollision(GameObject& a, GameObject& b, Collis
 
     float angularEffect = Vector3::Dot(inertiaA + inertiaB, p.normal);
 
-    float cRestitution = 0.66f;
+    float cRestitution = 0.66f * physA->restitutionModifier * physB->restitutionModifier;
 
     if (contactVelocity.Length() < 4.0f) {
         cRestitution = 0.0f;

@@ -78,8 +78,8 @@ void ClientGame::UpdateGame(float dt) {
     UpdateCharacterDirection();
     GetClientInput();
 
-    world->GetMainCamera().UpdateCamera(dt);
-    //UpdateCamera();
+    //world->GetMainCamera().UpdateCamera(dt);
+    UpdateCamera();
 
 
     //Debug::DrawLine(Vector3(500, 0, 500), Vector3(500, 100, 500), Vector4(1, 0, 0, 1));
@@ -131,12 +131,12 @@ void ClientGame::AddObjectFromLua(lua_State *L) {
 
     auto t = getStringField(L, "texture");
 
-    //g->SetRenderObject(new RenderObject(&g->GetTransform(),
-                                        //GetMesh(getStringField(L, "mesh")),
-                                        //std::string(t) == std::string("none") ? nullptr : GetTexture(t),
-                                        //GetShader(getStringField(L, "shader"))));
+    g->SetRenderObject(new RenderObject(&g->GetTransform(),
+                                        GetMesh(getStringField(L, "mesh"), getNumberField(L, "modelOffset")),
+                                        std::string(t) == std::string("none") ? nullptr : GetTexture(t),
+                                        GetShader(getStringField(L, "shader"))));
 
-    //g->GetRenderObject()->SetColour(getVec4Field(L, "color"));
+    g->GetRenderObject()->SetColour(getVec4Field(L, "color"));
 
 
 
@@ -254,7 +254,7 @@ void ClientGame::AddPlayerObjects(const Vector3 &position) {
         float inverseMass	= 0.5f;
 
         auto character = new GameObject();
-        auto volume  = new AABBVolume(Vector3(meshSize * 0.5, meshSize * 0.5, meshSize * 0.5));
+        auto volume  = new AABBVolume(Vector3(meshSize * 0.7, meshSize * 1.5, meshSize * 0.7));
 
         character->SetBoundingVolume((CollisionVolume*)volume);
 
@@ -263,7 +263,7 @@ void ClientGame::AddPlayerObjects(const Vector3 &position) {
                 .SetPosition(position);
 
         character->SetNetworkObject(new NetworkObject(*character, i));
-        //character->SetRenderObject(new RenderObject(&character->GetTransform(), GetMesh("alien.obj"), nullptr, GetShader("scene")));
+        character->SetRenderObject(new RenderObject(&character->GetTransform(), GetMesh("alien.obj", -0.4), nullptr, GetShader("scene")));
         netObjects[i] = character->GetNetworkObject();
         character->SetActive(false);
 
@@ -306,13 +306,13 @@ Texture *ClientGame::GetTexture(const std::string &texture) {
     return textures[texture];
 }
 
-Mesh *ClientGame::GetMesh(const std::string &mesh) {
+Mesh *ClientGame::GetMesh(const std::string &mesh, float offset) {
     if (meshes.find(mesh) == meshes.end()) {
 
         Mesh* p;
 
         if (mesh.substr(mesh.size() - 3) == "obj") {
-            p = renderer->LoadOBJMesh(mesh);
+            p = renderer->LoadOBJMesh(mesh, Vector3(0, offset, 0));
         } else {
             p = renderer->LoadMesh(mesh);
         }
@@ -341,17 +341,17 @@ void ClientGame::GetClientInput() {
         newPacket.buttonstates[s] = 0;
     }
 
-    if (Window::GetKeyboard()->KeyDown(KeyCodes::UP)) {
+    if (Window::GetKeyboard()->KeyDown(KeyCodes::W)) {
         newPacket.buttonstates[0] = 1;
     }
 
     auto address = (float*)&newPacket.buttonstates[1];
     *address = yaw;
 
-    if (Window::GetKeyboard()->KeyPressed(KeyCodes::J)) {
+    if (Window::GetKeyboard()->KeyPressed(KeyCodes::SPACE)) {
         ServerMessagePacket p;
         p.messageID = Player_Jump;
-        thisClient->SendPacket(p);
+        thisClient->SendPacket(senderAcknowledger->RequireAcknowledgement(p));
     }
 
     thisClient->SendPacket(newPacket);

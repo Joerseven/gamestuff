@@ -1,7 +1,9 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.0)
 project(client)
 
-add_executable(client ClientGame.cpp)
+add_executable(client ClientGame.cpp
+        PauseScreen.cpp
+        PauseScreen.h)
 
 target_include_directories(client PUBLIC .)
 target_include_directories(client PUBLIC ../Replicated)

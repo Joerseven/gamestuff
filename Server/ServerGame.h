@@ -30,7 +30,6 @@ public:
 
     void UpdateGame(float dt);
     void UpdatePlayers();
-    void InitWorld(lua_State *L);
     void ReceivePacket(int type, GamePacket* payload, int source) override;
 
 protected:
@@ -50,7 +49,7 @@ protected:
     void ClearPlayers();
 
     GameObject *AddFloorToWorld(const Vector3 &position);
-    void AddPlayerObjects(const Vector3 &position);
+    void AddPlayerObjects();
     void AddObjectFromLua(lua_State *L);
     void AddVolume(GameObject* g, const std::string& volumeType, lua_State *L);
 
@@ -66,7 +65,8 @@ protected:
     std::vector<NetworkObject*> netObjects;
 
     int playersJoined = 0;
-    bool shouldJump = false;
+
+    std::array<Vector3, 4> spawnPoints;
 
     int sentPackets = 0;
 
@@ -81,6 +81,10 @@ protected:
     void AssignPlayer(NetworkObject *obj, int peerId);
 
     void AttachCoinListener(GameObject *player);
+
+    void PlayerJump(int peerId);
+
+    GameObject *GetPlayerFromPeer(int peerId);
 };
 
 

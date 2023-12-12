@@ -44,11 +44,13 @@ ServerGame::ServerGame() {
         exit(1);
     }
 
-    lua_getglobal(L, "spawnPoint");
-    auto spawnPoint = Vector3((float)getNumberField(L, "x"), (float)getNumberField(L, "y"), (float)getNumberField(L, "z"));
+    lua_getglobal(L, "spawnPoints");
+    for (int i = 0; i < spawnPoints.size(); i++) {
+        spawnPoints[i] = getVec3Field(L, i);
+    }
     lua_pop(L, 1);
 
-    AddPlayerObjects(spawnPoint);
+    AddPlayerObjects();
 
     LoadLevel(L, 1);
 
@@ -134,15 +136,35 @@ void ServerGame::BroadcastSnapshot() {
     }
 }
 
-void ServerGame::InitWorld(lua_State *L) {
-    AddPlayerObjects({0,0,0});
-
-}
-
 void DebugPackets(int type, GamePacket *payload, int source) {
     std::cout << "Recieved Packet: " << std::endl;
     std::cout << "type: " << type << std::endl;
     std::cout << "source: " << source << std::endl;
+}
+
+GameObject* ServerGame::GetPlayerFromPeer(int peerId) {
+    return players[playerMap[peerId]];
+}
+
+void ServerGame::PlayerJump(int peerId) {
+    auto player = players[playerMap[peerId]];
+
+    Ray jumpChecker(player->GetTransform().GetPosition(), Vector3(0, -1, 0));
+    RayCollision collisionInfo;
+
+    if (world->Raycast(jumpChecker, collisionInfo, true, player)) {
+        auto distance = player->GetTransform().GetPosition().y
+                - collisionInfo.collidedAt.y
+                - ((AABBVolume*)player->GetBoundingVolume())->GetHalfDimensions().y;
+        if (distance <= 0.1) {
+            player->GetPhysicsObject()->AddForce(Vector3(0, 5000, 0));
+        }
+    }
+}
+
+void ServerGame::KillPlayer(int peerId) {
+    auto player = GetPlayerFromPeer(peerId);
+    player->GetTransform().SetPosition(spawnPoints[playerMap[peerId]]);
 }
 
 void ServerGame::ReceivePacket(int type, GamePacket *payload, int source) {
@@ -154,7 +176,8 @@ void ServerGame::ReceivePacket(int type, GamePacket *payload, int source) {
     if (type == Server_Message) {
         auto id = ((ServerMessagePacket*)payload)->messageID;
         if (id == Player_Jump) {
-            players[playerMap[source]]->GetPhysicsObject()->AddForce(Vector3(0, 1000, 0));
+            PlayerJump(source);
+            //players[playerMap[source]]->GetPhysicsObject()->AddForce(Vector3(0, 1000, 0));
         }
         return;
     }
@@ -313,6 +336,7 @@ GameObject* ServerGame::AddFloorToWorld(const Vector3& position) {
     floor->SetBoundingVolume((CollisionVolume*)volume);
     floor->GetTransform()
             .SetScale(floorSize * 2)
+            .SetScale(floorSize * 2)
             .SetPosition(position);
 
     floor->SetPhysicsObject(new PhysicsObject(&floor->GetTransform(), floor->GetBoundingVolume()));
@@ -331,24 +355,25 @@ void ServerGame::ClearPlayers() {
     }
 }
 
-void ServerGame::AddPlayerObjects(const Vector3 &position) {
+void ServerGame::AddPlayerObjects() {
     for (int i = 0; i < players.size(); i++) {
         float meshSize		= 1.0f;
         float inverseMass	= 0.5f;
 
         auto character = new GameObject();
-        auto volume  = new AABBVolume(Vector3(meshSize * 0.5, meshSize * 0.5, meshSize * 0.5));
+        auto volume  = new AABBVolume(Vector3(meshSize * 0.7, meshSize * 1.5, meshSize * 0.7));
 
         character->SetBoundingVolume((CollisionVolume*)volume);
 
         character->GetTransform()
                 .SetScale(Vector3(meshSize, meshSize, meshSize))
-                .SetPosition(position);
+                .SetPosition(spawnPoints[i]);
 
         character->SetPhysicsObject(new PhysicsObject(&character->GetTransform(), character->GetBoundingVolume()));
 
         character->GetPhysicsObject()->SetInverseMass(inverseMass);
         character->GetPhysicsObject()->InitSphereInertia();
+        character->GetPhysicsObject()->restitutionModifier = 0.0f;
 
         character->SetNetworkObject(new NetworkObject(*character, i));
         netObjects.push_back(character->GetNetworkObject());

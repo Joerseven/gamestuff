@@ -66,6 +66,7 @@ namespace NCL {
 			}
 
             bool isTrigger;
+            float restitutionModifier;
 
 		protected:
 			const CollisionVolume* volume;
@@ -84,6 +85,7 @@ namespace NCL {
 			Vector3 torque;
 			Vector3 inverseInertia;
 			Matrix3 inverseInteriaTensor;
+
 		};
 	}
 }
