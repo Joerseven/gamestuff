@@ -16,10 +16,10 @@ using namespace CSC8503;
 
 PhysicsSystem::PhysicsSystem(GameWorld& g) : gameWorld(g)	{
 	applyGravity	= false;
-	useBroadPhase	= false;	
+	useBroadPhase	= true;
 	dTOffset		= 0.0f;
 	globalDamping	= 0.995f;
-	SetGravity(Vector3(0.0f, -9.8f, 0.0f));
+	SetGravity(Vector3(0.0f, -15.0f, 0.0f));
 }
 
 PhysicsSystem::~PhysicsSystem()	{
@@ -54,7 +54,7 @@ bool useSimpleContainer = false;
 int constraintIterationCount = 10;
 
 //This is the fixed timestep we'd LIKE to have
-const int   idealHZ = 120;
+const int   idealHZ = 60;
 const float idealDT = 1.0f / idealHZ;
 
 /*
@@ -203,6 +203,11 @@ void PhysicsSystem::BasicCollisionDetection() {
             if ((*j)->GetPhysicsObject() == nullptr || !(*j)->IsActive()) {
                 continue;
             }
+
+            if ((*i)->GetPhysicsObject()->GetInverseMass() + (*j)->GetPhysicsObject()->GetInverseMass() == 0) {
+                continue;
+            }
+
             CollisionDetection::CollisionInfo info;
             if (CollisionDetection::ObjectIntersection(*i, *j, info)) {
                 ImpulseResolveCollision(*info.a, *info.b, info.point);
@@ -231,6 +236,10 @@ void PhysicsSystem::ImpulseResolveCollision(GameObject& a, GameObject& b, Collis
     float totalMass = physA->GetInverseMass() + physB->GetInverseMass();
 
     if (totalMass == 0) {
+        return;
+    }
+
+    if (physA->isTrigger || physB->isTrigger) {
         return;
     }
 
@@ -447,11 +456,11 @@ us to model springs and ropes etc.
 
 */
 void PhysicsSystem::UpdateConstraints(float dt) {
-	std::vector<Constraint*>::const_iterator first;
-	std::vector<Constraint*>::const_iterator last;
-	gameWorld.GetConstraintIterators(first, last);
+    std::vector<Constraint *>::const_iterator first;
+    std::vector<Constraint *>::const_iterator last;
+    gameWorld.GetConstraintIterators(first, last);
 
-	for (auto i = first; i != last; ++i) {
-		(*i)->UpdateConstraint(dt);
-	}
+    for (auto i = first; i != last; ++i) {
+        (*i)->UpdateConstraint(dt);
+    }
 }

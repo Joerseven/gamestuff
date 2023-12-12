@@ -64,7 +64,13 @@ bool NetworkObject::ReadFullPacket(FullPacket &p, TweenManager* tweenManager) {
 
     lastFullState = p.fullState;
 
-    tweenManager->Create(&object.GetTransform(), Transform().SetPosition(lastFullState.position).SetOrientation(lastFullState.orientation), 0.1);
+    if ((object.GetTransform().GetPosition() - lastFullState.position).LengthSquared() > 50) {
+        object.GetTransform().SetPosition(lastFullState.position);
+        tweenManager->ClearTween(&object.GetTransform());
+    } else {
+        tweenManager->Create(&object.GetTransform(), Transform().SetPosition(lastFullState.position).SetOrientation(lastFullState.orientation).SetScale(object.GetTransform().GetScale()), 0.1);
+    }
+
 
 //    object.GetTransform().SetPosition(lastFullState.position);
 //    object.GetTransform().SetOrientation(lastFullState.orientation);

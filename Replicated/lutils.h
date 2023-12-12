@@ -211,8 +211,8 @@ int LoadLevelFromImage(lua_State *L) {
             setIntField(L, "r", r);
             setIntField(L, "g", g);
             setIntField(L, "b", b);
-            setFloatField(L, "x", x * mapRatio);// * 0.25 * mapRatio - offsetX);
-            setFloatField(L, "z", z * mapRatio);// * 0.25 * mapRatio - offsetZ);
+            setFloatField(L, "x", x * mapRatio * 0.25);// * 0.25 * mapRatio - offsetX);
+            setFloatField(L, "z", z * mapRatio * 0.25);// * 0.25 * mapRatio - offsetZ);
             lua_rawseti(L, -2, tableCounter++);
         }
     }

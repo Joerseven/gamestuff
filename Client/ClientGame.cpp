@@ -44,11 +44,8 @@ ClientGame::ClientGame() : controller(*Window::GetWindow()->GetKeyboard(), *Wind
     InitCamera();
     InitWorld();
 
-    lua_getglobal(L, "spawnPoint");
-    auto spawnPoint = Vector3((float)getNumberField(L, "x"), (float)getNumberField(L, "y"), (float)getNumberField(L, "z"));
-    lua_pop(L, 1);
 
-    AddPlayerObjects(spawnPoint);
+    AddPlayerObjects({0,0,0});
 
     LoadLevel(L, 1);
 

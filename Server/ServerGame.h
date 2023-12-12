@@ -29,7 +29,7 @@ public:
     ~ServerGame();
 
     void UpdateGame(float dt);
-    void UpdatePlayers();
+    void UpdatePlayers(float dt);
     void ReceivePacket(int type, GamePacket* payload, int source) override;
 
 protected:
@@ -56,11 +56,15 @@ protected:
     GameObject *CreatePlayer(int peerId);
     void PlayerLeft(int peerId);
 
+    float jumpForgiveness;
+
     std::array<GameObject*, 4> players;
     std::map<int, int> playerMap;
     std::unordered_map<int, SenderAcknowledger<GameServer>*> playerSenders;
     std::unordered_map<int, RecieverAcknowledger<GameServer>*> playerRecievers;
     std::map<int, std::array<char, 8>> playerControls;
+
+    Subject<GameObject*> deathObserver;
 
     std::vector<NetworkObject*> netObjects;
 
@@ -85,6 +89,14 @@ protected:
     void PlayerJump(int peerId);
 
     GameObject *GetPlayerFromPeer(int peerId);
+
+    void KillPlayer(GameObject* player);
+
+    void LimitPlayerLinearVelocitys();
+
+    bool CheckPlayerOnGround(GameObject *player);
+
+    void CheckOffMapPlayers();
 };
 
 

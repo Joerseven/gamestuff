@@ -21,6 +21,7 @@ class TweenManager {
 public:
     void Create(Transform* character, const Transform& target, float duration);
     void Update(float dt);
+    void ClearTween(Transform* character);
 private:
     std::unordered_map<Transform*, TweenInfo> tweens;
 };

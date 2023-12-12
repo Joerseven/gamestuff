@@ -26,7 +26,9 @@ ServerGame::ServerGame() {
 
     forceMagnitude = 10.0f;
     timeToNextPacket  = 0.0f;
-    netIdCounter = 3; // Players added will bring it up to 4.
+    netIdCounter = 3; // Players added will bring it up to 3. Why did I do it like this it's like I'm incapable of writing code like a normal human.
+
+    jumpForgiveness = 0;
 
     physics->UseGravity(true);
 
@@ -46,7 +48,7 @@ ServerGame::ServerGame() {
 
     lua_getglobal(L, "spawnPoints");
     for (int i = 0; i < spawnPoints.size(); i++) {
-        spawnPoints[i] = getVec3Field(L, i);
+        spawnPoints[i] = getVec3Field(L, i+1);
     }
     lua_pop(L, 1);
 
@@ -66,7 +68,7 @@ ServerGame::~ServerGame() {
 
 void ServerGame::UpdateGame(float dt) {
 
-    UpdatePlayers();
+    UpdatePlayers(dt);
 
     timeToNextPacket -= dt;
     if (timeToNextPacket < 0) {
@@ -83,10 +85,23 @@ void ServerGame::UpdateGame(float dt) {
     world->UpdateWorld(dt);
     physics->Update(dt);
 
+    LimitPlayerLinearVelocitys();
+    CheckOffMapPlayers();
+
+
     server->UpdateServer();
 }
 
-void ServerGame::UpdatePlayers() {
+void ServerGame::CheckOffMapPlayers() {
+    for (int i=0; i<players.size(); i++) {
+        if (players[i]->GetTransform().GetPosition().y < -20) {
+            KillPlayer(players[i]);
+            deathObserver.Trigger(players[i]);
+        }
+    }
+}
+
+void ServerGame::UpdatePlayers(float dt) {
     for (auto it = playerControls.begin(); it != playerControls.end(); it++) {
 
         if (playerMap.find(it->first) == playerMap.end()) {
@@ -95,12 +110,21 @@ void ServerGame::UpdatePlayers() {
 
         auto player = players[playerMap[it->first]];
         auto &pressed = it->second;
-        float mag = 0.2f;
+        float mag = 10.0f;
+
+        jumpForgiveness -= dt;
+
+        if (CheckPlayerOnGround(player)) {
+            jumpForgiveness = 0.5;
+        }
 
         player->GetTransform()
             .SetOrientation(Quaternion::AxisAngleToQuaterion({0, 1, 0}, *((float*)&pressed[1])).Normalised());
 
-        player->GetPhysicsObject()->AddForce(player->GetTransform().GetOrientation() * Vector3(0, 0, (float)pressed[0] * mag * -1));
+        if (CheckPlayerOnGround(player)) {
+            player->GetPhysicsObject()->AddForce(player->GetTransform().GetOrientation() * Vector3(0, 0, (float)pressed[0] * mag * -1));
+        }
+
 //        players[playerMap[it->first]]->GetPhysicsObject()->AddForce(Vector3(
 //                (float)pressed[3] * mag + (float)pressed[1] * mag * -1,
 //                0,
@@ -146,25 +170,44 @@ GameObject* ServerGame::GetPlayerFromPeer(int peerId) {
     return players[playerMap[peerId]];
 }
 
-void ServerGame::PlayerJump(int peerId) {
-    auto player = players[playerMap[peerId]];
+bool ServerGame::CheckPlayerOnGround(GameObject* player) {
 
     Ray jumpChecker(player->GetTransform().GetPosition(), Vector3(0, -1, 0));
     RayCollision collisionInfo;
 
     if (world->Raycast(jumpChecker, collisionInfo, true, player)) {
         auto distance = player->GetTransform().GetPosition().y
-                - collisionInfo.collidedAt.y
-                - ((AABBVolume*)player->GetBoundingVolume())->GetHalfDimensions().y;
+                        - collisionInfo.collidedAt.y
+                        - ((AABBVolume*)player->GetBoundingVolume())->GetHalfDimensions().y;
         if (distance <= 0.1) {
-            player->GetPhysicsObject()->AddForce(Vector3(0, 5000, 0));
+            return true;
         }
+    }
+
+    return false;
+}
+
+void ServerGame::PlayerJump(int peerId) {
+
+    auto player = players[playerMap[peerId]];
+
+    if (jumpForgiveness > 0) {
+        player->GetPhysicsObject()->AddForce(Vector3(0, 5000, 0));
+        jumpForgiveness = 0;
     }
 }
 
-void ServerGame::KillPlayer(int peerId) {
-    auto player = GetPlayerFromPeer(peerId);
-    player->GetTransform().SetPosition(spawnPoints[playerMap[peerId]]);
+void ServerGame::KillPlayer(GameObject* player) {
+    // this is terrible but it's nearly wednesday
+    auto index = 0;
+    for (int i=0; i<players.size(); i++) {
+        if (players[i] == player) {
+            index = i;
+        }
+    }
+    player->GetPhysicsObject()->ClearForces();
+    player->GetPhysicsObject()->SetLinearVelocity(Vector3(0,0,0));
+    player->GetTransform().SetPosition(spawnPoints[index]);
 }
 
 void ServerGame::ReceivePacket(int type, GamePacket *payload, int source) {
@@ -210,6 +253,27 @@ void ServerGame::CatchupPlayerJoined(int peerId) {
         FunctionPacket p(SetNetworkObjectActive{n->networkID, n->object.IsActive()}, Functions::SetNetworkObjectActive);
         server->SendPacket(playerSenders[peerId]->RequireAcknowledgement(p), peerId);
     }
+}
+
+void ServerGame::ResetFlag(GameObject* player) {
+
+}
+
+void ServerGame::AttachFlagListener(GameObject* player) {
+
+    auto observer = new Observer<GameObject*>([&](GameObject* item) {
+        if (item->name == "flag") {
+
+            auto position = item->GetTransform().GetPosition();
+            item->
+
+            deathObserver.Attach( new Observer<GameObject*>([&item, position](GameObject* player) {
+                item->GetPhysicsObject()
+            }))
+        }
+    });
+
+    player->collisionListener->Attach(observer);
 }
 
 void ServerGame::AttachCoinListener(GameObject* player) {
@@ -271,6 +335,21 @@ void ServerGame::PlayerLeft(int peerId) {
 
 }
 
+void ServerGame::LimitPlayerLinearVelocitys() {
+    for (int i=0; i<players.size(); i++) {
+        auto maxSpeed = 10.0f;
+        if (!CheckPlayerOnGround(players[i]))
+            maxSpeed = 20.0f;
+
+        auto playPhs = players[i]->GetPhysicsObject();
+        auto mag = playPhs->GetLinearVelocity().Length();
+
+        if (mag >= maxSpeed) {
+            playPhs->SetLinearVelocity(playPhs->GetLinearVelocity().Normalised() * maxSpeed);
+        }
+    }
+}
+
 void ServerGame::LoadLevel(lua_State *L, int level) {
     lua_getglobal(L, "levels");
     lua_pushnumber(L, level);
@@ -301,6 +380,8 @@ void ServerGame::AddObjectFromLua(lua_State *L) {
         g->SetNetworkObject(new NetworkObject(*g, ++netIdCounter));
         netObjects.push_back(g->GetNetworkObject());
     }
+
+    g->GetPhysicsObject()->isTrigger = getBool(L, "isTrigger");
 
     moreTheFloor = g;
 

@@ -67,6 +67,7 @@ local base = {
     boundingSize = 1.0,
     network = false,
     modelOffset = -0.5,
+    isTrigger = false,
     position = Vector3:new(0, 0, 0),
     size = Vector3:new(1, 1, 1)
 }
@@ -87,7 +88,7 @@ local function CreateFloor(x,y,z)
     floor.bounding = "AABBVolume"
     floor.name = "floor"
     floor.mesh = "blockRounded.obj"
-    return floor
+    return { floor }
 end
 
 local function CreatePickup(x,y,z)
@@ -99,10 +100,20 @@ local function CreatePickup(x,y,z)
     pickup.position = Vector3:new(x,y + 2 ,z)
     pickup.name = "coin";
     pickup.network = true;
-    return pickup
+    return { pickup }
 end
 
-local function CreateGoalPlatform(x,y,z)
+local function CreateFlag(x,y,z)
+    local flag = CreateObject()
+    flag.mesh = "flag.obj"
+    flag.position = Vector3:new(x,y+5,z)
+    flag.size = Vector3:new(5,5,5)
+    flag.bounding = "AABBVolume"
+    flag.boundingSize = flag.size * 0.5
+    flag.network = true
+    flag.isTrigger = true
+    flag.name = "flag"
+
     local goalPlatform = CreateObject();
     goalPlatform.mesh = "blockMoving.obj"
     goalPlatform.size = Vector3:new(5,5,5)
@@ -110,37 +121,24 @@ local function CreateGoalPlatform(x,y,z)
     goalPlatform.boundingSize = goalPlatform.size * 0.5
     goalPlatform.boundingSize.y = goalPlatform.boundingSize.y * 0.25
     goalPlatform.network = true
-    goalPlatform.position = Vector3:new(x,y,z)
-    goalPlatform.name = "movingplatform"
+    goalPlatform.position = Vector3:new(x,y+3,z)
+    goalPlatform.name = "platform"
     goalPlatform.modelOffset = -0.125
-    return goalPlatform
-end
-
-local function CreateFlag(x,y,z)
-    local flag = CreateObject()
-    flag.mesh = "flag.obj"
-    flag.position = Vector3(x,y,z)
-    flag.size = Vector3:new(5,5,5)
-    flag.bounding = "AABBVolume"
-    flag.boundingSize = flag.size * 0.5;
-    flag.network = true
-    flag.name = "flag"
-    return flag
+    return { flag, goalPlatform }
 end
 
 itemIds = {
     [0] = CreateFloor,
     [100] = CreatePickup,
-    [200] = CreateGoalPlatform,
-    [150] = CreateFlag
+    [200] = CreateFlag,
 
 }
 
 spawnPoints = {
     Vector3:new(0, 10, 0),
-    Vector3:new(200, 10, 200),
-    Vector3:new(200, 10, 0),
-    Vector3:new(0, 10, 200)
+    Vector3:new(210, 10, 210),
+    Vector3:new(210, 10, 0),
+    Vector3:new(0, 10, 210)
 }
 
 levels = {
@@ -149,11 +147,13 @@ levels = {
 
 -- second argument is map ratio, difference between tilemap size and map size
 local level = LoadLevelFromImage("leveltest.png", 5)
-local level2 = LoadLevelFromImage("levelitems.png", 5)
 
 for k,v in ipairs(level) do
     local thisLevel = levels[1]
     if itemIds[v.r] then
-        thisLevel[#thisLevel+1] = itemIds[v.r](v.x, v.g, v.z)
+        local tab = itemIds[v.r](v.x, v.g, v.z)
+        for _, i in ipairs(tab) do
+            thisLevel[#thisLevel + 1] = i
+        end
     end
 end

@@ -33,3 +33,7 @@ void TweenManager::Update(float dt) {
         }
     }
 }
+
+void TweenManager::ClearTween(Transform *character) {
+    tweens.erase(character);
+}

@@ -67,12 +67,13 @@ namespace NCL {
 
             bool isTrigger;
             float restitutionModifier;
+            float inverseMass;
 
 		protected:
 			const CollisionVolume* volume;
 			Transform*		transform;
 
-			float inverseMass;
+
 			float elasticity;
 			float friction;
 
