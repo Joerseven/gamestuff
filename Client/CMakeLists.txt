@@ -7,12 +7,14 @@ add_executable(client ClientGame.cpp
 
 target_include_directories(client PUBLIC .)
 target_include_directories(client PUBLIC ../Replicated)
+target_include_directories(client PUBLIC ../tex/include)
 
 target_link_libraries(client LINK_PUBLIC NCLCoreClasses)
 target_link_libraries(client LINK_PUBLIC CSC8503CoreClasses)
 target_link_libraries(client LINK_PUBLIC OpenGLRendering)
 target_link_libraries(${PROJECT_NAME} LINK_PUBLIC CSC8503)
 target_link_libraries(${PROJECT_NAME} LINK_PUBLIC lua)
+target_link_libraries(${PROJECT_NAME} LINK_PUBLIC freetype)
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE
         <vector>

@@ -16,7 +16,7 @@ using namespace CSC8503;
 
 PhysicsSystem::PhysicsSystem(GameWorld& g) : gameWorld(g)	{
 	applyGravity	= false;
-	useBroadPhase	= true;
+	useBroadPhase	= false;
 	dTOffset		= 0.0f;
 	globalDamping	= 0.995f;
 	SetGravity(Vector3(0.0f, -15.0f, 0.0f));
@@ -96,7 +96,6 @@ void PhysicsSystem::Update(float dt) {
         else {
             BasicCollisionDetection();
         }
-
 
 		dTOffset -= realDT;
 		iteratorCount++;
@@ -205,6 +204,13 @@ void PhysicsSystem::BasicCollisionDetection() {
             }
 
             if ((*i)->GetPhysicsObject()->GetInverseMass() + (*j)->GetPhysicsObject()->GetInverseMass() == 0) {
+                if ((*i)->GetPhysicsObject()->isTrigger && (*j)->GetPhysicsObject()->isTrigger) {
+                    CollisionDetection::CollisionInfo info;
+                    if (CollisionDetection::ObjectIntersection(*i, *j, info)) {
+                        info.framesLeft = numCollisionFrames;
+                        allCollisions.insert(info);
+                    }
+                }
                 continue;
             }
 
@@ -265,7 +271,7 @@ void PhysicsSystem::ImpulseResolveCollision(GameObject& a, GameObject& b, Collis
 
     float angularEffect = Vector3::Dot(inertiaA + inertiaB, p.normal);
 
-    float cRestitution = 0.66f * physA->restitutionModifier * physB->restitutionModifier;
+    float cRestitution = 0.66f* physA->restitutionModifier * physB->restitutionModifier;
 
     if (contactVelocity.Length() < 4.0f) {
         cRestitution = 0.0f;
@@ -292,7 +298,7 @@ compare the collisions that we absolutely need to.
 */
 void PhysicsSystem::BroadPhase() {
     broadphaseCollisions.clear();
-    QuadTree tree(Vector2(1024, 1024), 7, 6);
+    QuadTree tree(Vector2(1024, 1024), 15, 15);
 
     std::vector<GameObject*>::const_iterator first;
     std::vector<GameObject*>::const_iterator last;

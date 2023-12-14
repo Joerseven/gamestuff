@@ -4,6 +4,7 @@
 
 #include "ClientGame.h"
 #include "Window.h"
+#include "../Server/ServerGame.h"
 
 
 ClientGame::ClientGame() : controller(*Window::GetWindow()->GetKeyboard(), *Window::GetWindow()->GetMouse()) {
@@ -15,6 +16,8 @@ ClientGame::ClientGame() : controller(*Window::GetWindow()->GetKeyboard(), *Wind
     renderer = new GameTechRenderer(*world);
 
     lockedObject = nullptr;
+
+    stateManager = new PushdownMachine(new ReadyScreen(this));
 
     world->GetMainCamera().SetController(controller);
 
@@ -58,9 +61,6 @@ ClientGame::ClientGame() : controller(*Window::GetWindow()->GetKeyboard(), *Wind
     recieverAcknowledger = new RecieverAcknowledger(thisClient);
     senderAcknowledger = new SenderAcknowledger(thisClient);
 
-
-
-    //RemoteFunctionPacket(2, "Hello world", 27, 4921231, 18);
 }
 
 ClientGame::~ClientGame() {
@@ -73,16 +73,14 @@ ClientGame::~ClientGame() {
 
 void ClientGame::UpdateGame(float dt) {
     UpdateCharacterDirection();
-    GetClientInput();
-
     //world->GetMainCamera().UpdateCamera(dt);
     UpdateCamera();
-
-
+    //Debug::Print("Player", Vector2(5, 95), Debug::RED);
     //Debug::DrawLine(Vector3(500, 0, 500), Vector3(500, 100, 500), Vector4(1, 0, 0, 1));
 
-    world->UpdateWorld(dt);
+    stateManager->Update(dt);
 
+    world->UpdateWorld(dt);
     tweenManager->Update(dt);
 
     renderer->Update(dt);
@@ -92,6 +90,8 @@ void ClientGame::UpdateGame(float dt) {
 
     renderer->Render();
     thisClient->UpdateClient();
+
+
     Debug::UpdateRenderables(dt);
 }
 
@@ -128,12 +128,16 @@ void ClientGame::AddObjectFromLua(lua_State *L) {
 
     auto t = getStringField(L, "texture");
 
-    g->SetRenderObject(new RenderObject(&g->GetTransform(),
-                                        GetMesh(getStringField(L, "mesh"), getNumberField(L, "modelOffset")),
-                                        std::string(t) == std::string("none") ? nullptr : GetTexture(t),
-                                        GetShader(getStringField(L, "shader"))));
+    if (strcmp(getStringField(L, "mesh") ,"none") != 0) {
+        g->SetRenderObject(new RenderObject(&g->GetTransform(),
+                                            GetMesh(getStringField(L, "mesh"), getNumberField(L, "modelOffset")),
+                                            std::string(t) == std::string("none") ? nullptr : GetTexture(t),
+                                            GetShader(getStringField(L, "shader"))));
 
-    g->GetRenderObject()->SetColour(getVec4Field(L, "color"));
+        g->GetRenderObject()->SetColour(getVec4Field(L, "color"));
+    }
+
+
 
 
 
@@ -169,6 +173,7 @@ void ClientGame::StartAsClient(char a, char b, char c, char d) {
     thisClient->RegisterPacketHandler(Acknowledge_Packet, this);
     thisClient->RegisterPacketHandler(Function, this);
     thisClient->RegisterPacketHandler(Function + 1, this);
+    thisClient->RegisterPacketHandler(Function + 2, this);
 
     thisClient->connectCallback = [&](){
         ServerMessagePacket p;
@@ -219,8 +224,8 @@ void ClientGame::ReceivePacket(int type, GamePacket *payload, int source) {
     }
 
     if (type == Message) {
-        if (((MessagePacket*)payload)->messageID == Player_Created) {
-
+        if (((MessagePacket*)payload)->messageID == Game_Started) {
+            startGame = 1;
         }
     }
 
@@ -232,6 +237,11 @@ void ClientGame::ReceivePacket(int type, GamePacket *payload, int source) {
         if (type == Functions::AssignPlayerFunction) {
             auto& packetInfo = ((FunctionPacket<AssignPlayerFunction>*)payload)->info;
             lockedObject = &netObjects[packetInfo.networkId]->object;
+        }
+
+        if (type == Functions::UpdatePlayerScore) {
+            auto& packetInfo = ((FunctionPacket<PlayerScores>*)payload)->info;
+            SetScore(packetInfo);
         }
 
         if (type == Functions::SetNetworkObjectActive) {
@@ -321,6 +331,10 @@ Mesh *ClientGame::GetMesh(const std::string &mesh, float offset) {
     return meshes[mesh];
 }
 
+void ClientGame::SetScore(PlayerScores scores) {
+    playerScores = scores;
+}
+
 Shader *ClientGame::GetShader(const std::string &shader) {
     if (shaders.find(shader) == shaders.end()) {
         auto p = renderer->LoadShader(shader + std::string(".vert"), shader + std::string(".frag"));
@@ -334,21 +348,30 @@ Shader *ClientGame::GetShader(const std::string &shader) {
 void ClientGame::GetClientInput() {
     ClientPacket newPacket;
 
-    for (size_t s = 0; s < 8; s++) {
-        newPacket.buttonstates[s] = 0;
-    }
+    newPacket.buttonstates[0] = 0;
+    newPacket.buttonstates[6] = 0;
 
     if (Window::GetKeyboard()->KeyDown(KeyCodes::W)) {
         newPacket.buttonstates[0] = 1;
     }
 
-    auto address = (float*)&newPacket.buttonstates[1];
-    *address = yaw;
+    *((float*)&newPacket.buttonstates[1]) = yaw;
+
+    if (Window::GetKeyboard()->KeyDown(KeyCodes::S)) {
+        newPacket.buttonstates[6] = 1;
+    }
 
     if (Window::GetKeyboard()->KeyPressed(KeyCodes::SPACE)) {
         ServerMessagePacket p;
         p.messageID = Player_Jump;
         thisClient->SendPacket(senderAcknowledger->RequireAcknowledgement(p));
+    }
+
+    if (Window::GetKeyboard()->KeyPressed(KeyCodes::E)) {
+        ServerMessagePacket p;
+        p.messageID = Player_Use;
+        thisClient->SendPacket(senderAcknowledger->RequireAcknowledgement(p));
+
     }
 
     thisClient->SendPacket(newPacket);
@@ -370,8 +393,14 @@ void ClientGame::UpdateCharacterDirection() {
 
 }
 
-int main() {
+void ClientGame::RenderScore() {
+    for (int i=0; i<4; i++) {
+        std::string s = std::string("Player ") + std::to_string(i+1) + ": " + std::to_string(playerScores.values[i]);
+        renderer->AddRenderText(s, 25.0f , 1000 - (10.f + (float)i*50.f), 0.8, Vector3(1,1,1));
+    }
+}
 
+int main() {
 
     Window*w = Window::CreateGameWindow("CSC8503 Game technology!", 1920, 1080);
 
@@ -404,3 +433,55 @@ int main() {
     g->Disconnect();
     Window::DestroyGameWindow();
 }
+
+ReadyScreen::ReadyScreen(ClientGame* g) {
+    this->g = g;
+    isReady = false;
+}
+
+PlayScreen::PlayScreen(ClientGame *g) {
+    this->g = g;
+}
+
+PushdownState::PushdownResult PlayScreen::OnUpdate(float dt, NCL::CSC8503::PushdownState **pushFunc) {
+    g->GetClientInput();
+    g->RenderScore();
+    return PushdownState::NoChange;
+}
+
+void PlayScreen::OnAwake() {
+
+}
+
+void PlayScreen::OnSleep() {
+
+}
+
+PushdownState::PushdownResult ReadyScreen::OnUpdate(float dt, NCL::CSC8503::PushdownState **pushFunc) {
+
+    if (Window::GetKeyboard()->KeyPressed(KeyCodes::R)) {
+        isReady = !isReady;
+        ServerMessagePacket p;
+        p.messageID = Player_Ready;
+        g->thisClient->SendPacket(g->senderAcknowledger->RequireAcknowledgement(p));
+    }
+
+    g->renderer->AddRenderText("Ready", 25, 1000, 1.0, Vector3(!isReady * 1, isReady*1, 0));
+
+    if (g->startGame) {
+        *pushFunc = new PlayScreen(g);
+        return PushdownState::Push;
+    }
+
+    return PushdownState::NoChange;
+}
+
+void ReadyScreen::OnAwake() {
+
+}
+
+void ReadyScreen::OnSleep() {
+
+}
+
+

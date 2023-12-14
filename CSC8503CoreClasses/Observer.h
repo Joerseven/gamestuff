@@ -5,59 +5,74 @@
 #ifndef CSC8503_OBSERVER_H
 #define CSC8503_OBSERVER_H
 
-template <typename T>
+template <typename ...Args>
 class IObserver {
 public:
     virtual ~IObserver() = default;
-    virtual void Receive(const T& eventData) = 0;
+    virtual bool Receive(const Args&... eventData) = 0;
 };
 
-template <typename T>
+template <typename ...Args>
 class ISubject {
 public:
     virtual ~ISubject() = default;
-    virtual void Attach(IObserver<T> *observer) = 0;
-    virtual void Detach(IObserver<T> *observer) = 0;
-    virtual void Trigger(const T& data) = 0;
+    virtual void Attach(IObserver<Args...> *observer) = 0;
+    virtual void Detach(IObserver<Args...> *observer) = 0;
+    virtual void Trigger(const Args&... data) = 0;
 };
 
-template <typename T>
-class Subject: public ISubject<T> {
+template <typename ...Args>
+class Subject: public ISubject<Args...> {
 public:
 
     virtual~ Subject() {}
 
-    void Attach(IObserver<T> *observer) override {
+    void Attach(IObserver<Args...> *observer) override {
         observers.push_back(observer);
     }
 
-    void Detach(IObserver<T> *observer) override {
+    void Detach(IObserver<Args...> *observer) override {
+        std::cout << "Started at: " << observers.size() << std::endl;
         observers.remove(observer);
+        std::cout << "Removed at: " << observers.size() << std::endl;
+
     }
 
-    void Trigger(const T& data) override {
-        for (auto it = observers.begin(); it != observers.end(); it++) {
-            (*it)->Receive(data);
+    void Trigger(const Args&... data) override {
+        for (auto it = observers.begin(); it != observers.end();) {
+            if ((*it)->Receive(data...)) {
+                observers.erase(it++);
+                std::cout << "Erasing self, observers now at: " << observers.size() << std::endl;
+            } else {
+                ++it;
+            }
         }
     }
 
 private:
-    std::list<IObserver<T>*> observers;
+    std::list<IObserver<Args...>*> observers;
 };
 
-template <typename T>
-class Observer : public IObserver<T> {
+template <typename ...Args>
+class Observer : public IObserver<Args...> {
 public:
-    Observer(std::function<void(T)> triggerFunction) {
+
+    Observer() = default;
+
+    Observer(std::function<bool(Args...)> triggerFunction) {
         onTrigger = triggerFunction;
     }
 
-    void Receive(const T& eventData) override {
-        onTrigger(eventData);
+    void SetOnTrigger(std::function<bool(Args...)> triggerFunction) {
+        onTrigger = triggerFunction;
+    }
+
+    bool Receive(const Args&... args) override {
+        return onTrigger(args...);
     }
 
 private:
-    std::function<void(T)> onTrigger;
+    std::function<bool(Args...)> onTrigger;
 };
 
 

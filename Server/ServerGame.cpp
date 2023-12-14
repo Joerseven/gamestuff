@@ -13,6 +13,7 @@ ServerGame::ServerGame() {
         CreatePlayer(peerId);
     },
                             [&](int peerId) {
+        KillPlayer(players[playerMap[peerId]]);
         PlayerLeft(peerId);
     });
     server->RegisterPacketHandler(Received_State, this);
@@ -29,6 +30,10 @@ ServerGame::ServerGame() {
     netIdCounter = 3; // Players added will bring it up to 3. Why did I do it like this it's like I'm incapable of writing code like a normal human.
 
     jumpForgiveness = 0;
+
+    stateManager = new PushdownMachine(new ReadyScreenServer(this));
+
+    playerScores.fill(0);
 
     physics->UseGravity(true);
 
@@ -56,6 +61,8 @@ ServerGame::ServerGame() {
 
     LoadLevel(L, 1);
 
+    InitialiseEvents();
+
     lua_close(L);
 
 }
@@ -64,9 +71,12 @@ ServerGame::~ServerGame() {
     delete physics;
     delete world;
     delete server;
+    delete deathObserver;
 }
 
 void ServerGame::UpdateGame(float dt) {
+
+    stateManager->Update(dt);
 
     UpdatePlayers(dt);
 
@@ -92,11 +102,23 @@ void ServerGame::UpdateGame(float dt) {
     server->UpdateServer();
 }
 
+void ServerGame::InitialiseEvents() {
+
+    deathObserver = new Subject<GameObject*>();
+
+    world->OperateOnContents([this] (GameObject* o){
+        if (o->name == "flag") {
+            o->collisionListener = new Subject<GameObject*>();
+            ListenFlagPickedUp(o);
+        }
+    });
+}
+
 void ServerGame::CheckOffMapPlayers() {
     for (int i=0; i<players.size(); i++) {
         if (players[i]->GetTransform().GetPosition().y < -20) {
             KillPlayer(players[i]);
-            deathObserver.Trigger(players[i]);
+            deathObserver->Trigger(players[i]);
         }
     }
 }
@@ -121,14 +143,11 @@ void ServerGame::UpdatePlayers(float dt) {
         player->GetTransform()
             .SetOrientation(Quaternion::AxisAngleToQuaterion({0, 1, 0}, *((float*)&pressed[1])).Normalised());
 
-        if (CheckPlayerOnGround(player)) {
-            player->GetPhysicsObject()->AddForce(player->GetTransform().GetOrientation() * Vector3(0, 0, (float)pressed[0] * mag * -1));
+        if (!CheckPlayerOnGround(player)) {
+            mag = 0.1f;
         }
 
-//        players[playerMap[it->first]]->GetPhysicsObject()->AddForce(Vector3(
-//                (float)pressed[3] * mag + (float)pressed[1] * mag * -1,
-//                0,
-//                (float)pressed[2] * mag + (float)pressed[0] * mag * -1));
+        player->GetPhysicsObject()->AddForce(player->GetTransform().GetOrientation() * Vector3(0, 0, ((float)pressed[0] * mag * -1) + ((float)pressed[6] * mag)));
     }
 }
 
@@ -205,6 +224,7 @@ void ServerGame::KillPlayer(GameObject* player) {
             index = i;
         }
     }
+    deathObserver->Trigger(player);
     player->GetPhysicsObject()->ClearForces();
     player->GetPhysicsObject()->SetLinearVelocity(Vector3(0,0,0));
     player->GetTransform().SetPosition(spawnPoints[index]);
@@ -221,6 +241,10 @@ void ServerGame::ReceivePacket(int type, GamePacket *payload, int source) {
         if (id == Player_Jump) {
             PlayerJump(source);
             //players[playerMap[source]]->GetPhysicsObject()->AddForce(Vector3(0, 1000, 0));
+        }
+
+        if (id == Player_Ready) {
+            playerReady[source] = !playerReady[source];
         }
         return;
     }
@@ -240,6 +264,7 @@ void ServerGame::ReceivePacket(int type, GamePacket *payload, int source) {
     }
 }
 
+
 void ServerGame::SetActiveNetworkObject(NetworkObject* networkObject, bool active) {
     for (auto& ps : playerSenders) {
         networkObject->object.SetActive(active);
@@ -255,36 +280,103 @@ void ServerGame::CatchupPlayerJoined(int peerId) {
     }
 }
 
-void ServerGame::ResetFlag(GameObject* player) {
+void ServerGame::ListenFlagDropped(GameObject* playerWhoCaptured, GameObject* flag, Transform transform) {
+    auto* playerDeathObserver = new Observer<GameObject*>();
+    auto* flagReturnedObserver = new Observer<GameObject*>();
 
-}
+    std::cout << "Flag reset event attached" << std::endl;
 
-void ServerGame::AttachFlagListener(GameObject* player) {
+    playerDeathObserver->SetOnTrigger([=, this](GameObject* playerWhoDied) {
+        if (playerWhoDied == playerWhoCaptured) {
 
-    auto observer = new Observer<GameObject*>([&](GameObject* item) {
-        if (item->name == "flag") {
+            std::cout << "Flag being put back!" << std::endl;
 
-            auto position = item->GetTransform().GetPosition();
-            item->
+            flag->GetPhysicsObject()->SetInverseMass(0);
 
-            deathObserver.Attach( new Observer<GameObject*>([&item, position](GameObject* player) {
-                item->GetPhysicsObject()
-            }))
+            // This is not a real constraint no marks plz
+            world->RemoveConstraint(flagConstraint);
+            delete flagConstraint;
+            flagConstraint = nullptr;
+
+            flag->GetTransform().SetPosition(transform.GetPosition());
+            flag->GetTransform().SetOrientation(transform.GetOrientation());
+
+            flag->collisionListener->Detach(flagReturnedObserver);
+            ListenFlagPickedUp(flag);
+            return true;
         }
+
+        return false;
     });
 
-    player->collisionListener->Attach(observer);
-}
+    flagReturnedObserver->SetOnTrigger([=, this](GameObject* collidedWith) {
+        if (collidedWith->name == "spawn") {
 
-void ServerGame::AttachCoinListener(GameObject* player) {
-    auto observer = new Observer<GameObject*>([this](GameObject* item){
-        if (item->name == "coin") {
-            SetActiveNetworkObject(item->GetNetworkObject(), false);
-            std::cout << "Is triggering" << std::endl;
+            std::cout << "Player reached spawn with flag!" << std::endl;
+
+            flag->GetPhysicsObject()->SetInverseMass(0);
+
+            world->RemoveConstraint(flagConstraint);
+            delete flagConstraint;
+            flagConstraint = nullptr;
+
+            flag->GetTransform().SetPosition(transform.GetPosition());
+            flag->GetTransform().SetOrientation(transform.GetOrientation());
+
+            for (int i=0; i < players.size(); i++) {
+                if (players[i] == playerWhoCaptured) {
+                    playerScores[i] += 1;
+                    std::cout << "Player got a score!" << std::endl;
+                }
+            }
+
+
+            for (auto& sender: playerSenders) {
+                PlayerScores p{};
+                memcpy(p.values, playerScores.data(), 4 * sizeof(int));
+                auto fp = FunctionPacket<PlayerScores>(p, Functions::UpdatePlayerScore);
+                server->SendPacket(sender.second->RequireAcknowledgement(fp), sender.first);
+            }
+
+            std::cout << "Sent score to players" << std::endl;
+
+            deathObserver->Detach(playerDeathObserver);
+            ListenFlagPickedUp(flag);
+            return true;
         }
+        return false;
     });
 
-    player->collisionListener->Attach(observer);
+    deathObserver->Attach(playerDeathObserver);
+    flag->collisionListener->Attach(flagReturnedObserver);
+}
+
+void ServerGame::ListenFlagPickedUp(GameObject* flag) {
+    Observer<GameObject*>* observer = new Observer<GameObject*>();
+
+    std::cout << "Flag pickup event attached" << std::endl;
+
+    observer->SetOnTrigger([flag, this](GameObject* collidedWith){
+        if (collidedWith->name == "player") {
+
+            std::cout << "Flag being picked up!" << std::endl;
+
+            auto originalFlagTransform = flag->GetTransform();
+
+            // This is not a real constraint :(
+            flagConstraint = new FixedConstraint(flag, collidedWith, 0, 2, 0.6);
+            world->AddConstraint(flagConstraint);
+            //flag->GetPhysicsObject()->SetInverseMass(1.0f/2);
+
+
+            ListenFlagDropped(collidedWith, flag, originalFlagTransform);
+            return true;
+        }
+
+        return false;
+    });
+
+    flag->collisionListener->Attach(observer);
 }
 
 void ServerGame::AssignPlayer(NetworkObject* obj, int peerId) {
@@ -309,9 +401,9 @@ GameObject *ServerGame::CreatePlayer(int peerId) {
     playerSenders.insert(std::make_pair(peerId, new SenderAcknowledger(server, peerId)));
     playerRecievers.insert(std::make_pair(peerId, new RecieverAcknowledger(server, peerId)));
     playerMap.insert(std::make_pair(peerId, freeIndex));
+    playerReady.insert(std::make_pair(peerId, false));
 
     SetActiveNetworkObject(players[freeIndex]->GetNetworkObject(), true);
-    AttachCoinListener(players[freeIndex]);
     AssignPlayer(players[freeIndex]->GetNetworkObject(), peerId);
     CatchupPlayerJoined(peerId);
 
@@ -461,7 +553,7 @@ void ServerGame::AddPlayerObjects() {
 
         character->collisionListener = new Subject<GameObject*>();
 
-        character->name = "Player " + std::to_string(i);
+        character->name = "player";
 
         character->SetActive(false);
 
@@ -493,3 +585,56 @@ int main() {
 }
 
 
+PushdownState::PushdownResult ReadyScreenServer::OnUpdate(float dt, NCL::CSC8503::PushdownState **pushFunc) {
+    bool allReady = true;
+
+    if (g->playerReady.size() < 1) {
+        allReady = false;
+    }
+
+    for (const auto& ready : g->playerReady) {
+        allReady = allReady && ready.second;
+    }
+
+    if (allReady) {
+        for (auto& sender : g->playerSenders) {
+            MessagePacket p;
+            p.messageID = Game_Started;
+            g->server->SendPacket(sender.second->RequireAcknowledgement(p), sender.first);
+        }
+        *pushFunc = new PlayServer(g);
+        return PushdownState::Push;
+    }
+
+    return PushdownState::NoChange;
+}
+
+ReadyScreenServer::ReadyScreenServer(ServerGame *g) {
+    this->g = g;
+    isReady = false;
+}
+
+
+void ReadyScreenServer::OnAwake() {
+
+}
+
+void ReadyScreenServer::OnSleep() {
+
+}
+
+PlayServer::PlayServer(ServerGame *g) {
+    this->g = g;
+}
+
+PushdownState::PushdownResult PlayServer::OnUpdate(float dt, NCL::CSC8503::PushdownState **pushFunc) {
+    return PushdownState::NoChange;
+}
+
+void PlayServer::OnAwake() {
+
+}
+
+void PlayServer::OnSleep() {
+
+}

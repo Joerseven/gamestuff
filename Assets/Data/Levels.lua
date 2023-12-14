@@ -1,5 +1,6 @@
 require "math"
 require "debug"
+require "table"
 
 function dump(o)
     if type(o) == 'table' then
@@ -55,6 +56,10 @@ Vector3.__mul = function(vec, scale)
     return new
 end
 
+Vector3.__add = function(vec1, vec2)
+    return Vector3:new(vec1.x + vec2.x, vec1.y + vec2.y, vec1.z + vec2.z)
+end
+
 local base = {
     name = "",
     mesh = "Cube.msh",
@@ -82,7 +87,7 @@ end
 
 local function CreateFloor(x,y,z)
     local floor = CreateObject()
-    floor.size = Vector3:new(5,5, 5);
+    floor.size = Vector3:new(5,5, 5)
     floor.boundingSize = floor.size * 0.5
     floor.position = Vector3:new(x, y, z)
     floor.bounding = "AABBVolume"
@@ -90,6 +95,26 @@ local function CreateFloor(x,y,z)
     floor.mesh = "blockRounded.obj"
     return { floor }
 end
+
+local function CreateSpawnPoint(x,y,z)
+
+    local floorPartT = CreateFloor(x,y,z)
+    local floorPart = floorPartT[1]
+
+    local triggerPoint = CreateObject()
+    triggerPoint.mesh = "none"
+    triggerPoint.size = Vector3:new(5,5,5)
+    triggerPoint.boundingSize = triggerPoint.size * 0.5
+    triggerPoint.bounding = "AABBVolume"
+    triggerPoint.name = "spawn"
+    triggerPoint.position = floorPart.position + Vector3:new(0,5,0)
+    triggerPoint.isTrigger = true
+    triggerPoint.active = true
+
+    return { triggerPoint, floorPart }
+
+end
+
 
 local function CreatePickup(x,y,z)
     local pickup = CreateObject()
@@ -129,16 +154,16 @@ end
 
 itemIds = {
     [0] = CreateFloor,
+    [50] = CreateSpawnPoint,
     [100] = CreatePickup,
     [200] = CreateFlag,
-
 }
 
 spawnPoints = {
     Vector3:new(0, 10, 0),
-    Vector3:new(210, 10, 210),
-    Vector3:new(210, 10, 0),
-    Vector3:new(0, 10, 210)
+    Vector3:new(100, 10, 100),
+    Vector3:new(100, 10, 0),
+    Vector3:new(0, 10, 100)
 }
 
 levels = {

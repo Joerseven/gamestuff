@@ -16,6 +16,10 @@ struct ServerInfo {
     int playerIds[4];
 };
 
+struct PlayerScores {
+    int values[4];
+};
+
 struct ServerMessagePacket : public GamePacket {
     short messageID;
     ServerMessagePacket() {
@@ -28,6 +32,7 @@ namespace Functions {
     enum Functions {
         AssignPlayerFunction = Function,
         SetNetworkObjectActive,
+        UpdatePlayerScore
     };
 }
 
@@ -209,8 +214,13 @@ enum ServerMessages {
     Player_Loaded,
     Player_Jump,
     Player_Created,
+    Player_Use,
+    Player_Ready,
 };
 
+enum PlayerMessages {
+    Game_Started
+};
 
 
 enum ObjectTypes {
