@@ -277,6 +277,16 @@ bool CollisionDetection::ObjectIntersection(GameObject* a, GameObject* b, Collis
 		return OBBSphereIntersection((OBBVolume&)*volB, transformB, (SphereVolume&)*volA, transformA, collisionInfo);
 	}
 
+    if (volA->type == VolumeType::OBB && volB->type == VolumeType::AABB) {
+        return OBBAABBIntersection((OBBVolume&)*volA, transformA, (AABBVolume&)*volB, transformB, collisionInfo);
+    }
+
+    if (volA->type == VolumeType::AABB && volB->type == VolumeType::OBB) {
+        collisionInfo.a = b;
+        collisionInfo.b = a;
+        return OBBAABBIntersection((OBBVolume&)*volB, transformA, (AABBVolume&)*volA, transformB, collisionInfo);
+    }
+
 	//Capsule vs other interactions
 	if (volA->type == VolumeType::Capsule && volB->type == VolumeType::Sphere) {
 		return SphereCapsuleIntersection((CapsuleVolume&)*volA, transformA, (SphereVolume&)*volB, transformB, collisionInfo);
@@ -408,7 +418,53 @@ bool CollisionDetection::AABBSphereIntersection(const AABBVolume& volumeA, const
 
 bool  CollisionDetection::OBBSphereIntersection(const OBBVolume& volumeA, const Transform& worldTransformA,
 	const SphereVolume& volumeB, const Transform& worldTransformB, CollisionInfo& collisionInfo) {
+    Vector3 obbposition = worldTransformA.GetPosition();
+    Matrix3 oppositeOrientation = Matrix3(worldTransformA.GetOrientation().Conjugate());
+
+    Vector3 localSphere = worldTransformB.GetPosition() - obbposition;
+    Vector3 localSphereOrientated = oppositeOrientation * localSphere;
+
+    auto halfDim = volumeA.GetHalfDimensions();
+    auto closestPoint = Vector3::Clamp(localSphereOrientated, -halfDim, halfDim);
+
+    Vector3 localSpherePoint = localSphereOrientated - closestPoint;
+    float dis = (localSpherePoint).Length();
+
+    if (dis < volumeB.GetRadius()) {
+        auto collisionNormal = worldTransformA.GetOrientation() * localSpherePoint.Normalised();
+        auto penetration = (volumeB.GetRadius() - dis);
+
+        auto localA = worldTransformA.GetOrientation() * closestPoint;
+        auto localB = -collisionNormal * volumeB.GetRadius();
+
+        collisionInfo.AddContactPoint(localA, localB, collisionNormal, penetration);
+        return true;
+    }
 	return false;
+}
+
+bool CollisionDetection::OBBAABBIntersection(const OBBVolume& volumeA, const Transform& worldTransformA, const AABBVolume& volumeB, const Transform& worldTransformB, CollisionInfo& collisionInfo) {
+    Vector3 obbPosition = worldTransformA.GetPosition();
+    Quaternion obbOrientation = worldTransformA.GetOrientation();
+    Matrix3 OBBInvOrientation = Matrix3(obbOrientation.Conjugate());
+
+    Vector3 localAABB = worldTransformB.GetPosition() - obbPosition;
+    Vector3 localAABBOrientation = OBBInvOrientation * localAABB;
+
+
+    Transform tempAABB;
+    tempAABB.SetPosition((localAABBOrientation) + worldTransformA.GetPosition());
+
+    bool collided = AABBIntersection(AABBVolume(volumeA.GetHalfDimensions()), worldTransformA, volumeB, tempAABB, collisionInfo);
+
+    if(collided)
+    {
+        collisionInfo.point.localA = worldTransformA.GetOrientation() * collisionInfo.point.localA;
+        collisionInfo.point.localB = worldTransformB.GetOrientation() * collisionInfo.point.localB;
+        collisionInfo.point.normal = worldTransformA.GetOrientation() * collisionInfo.point.normal;
+        return true;
+    }
+    return false;
 }
 
 bool CollisionDetection::AABBCapsuleIntersection(

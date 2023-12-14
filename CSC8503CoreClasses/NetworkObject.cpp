@@ -68,7 +68,7 @@ bool NetworkObject::ReadFullPacket(FullPacket &p, TweenManager* tweenManager) {
         object.GetTransform().SetPosition(lastFullState.position);
         tweenManager->ClearTween(&object.GetTransform());
     } else {
-        tweenManager->Create(&object.GetTransform(), Transform().SetPosition(lastFullState.position).SetOrientation(lastFullState.orientation).SetScale(object.GetTransform().GetScale()), 0.05);
+        tweenManager->Create(&object.GetTransform(), Transform().SetPosition(lastFullState.position).SetOrientation(lastFullState.orientation).SetScale(object.GetTransform().GetScale()), 0.1);
     }
 
 

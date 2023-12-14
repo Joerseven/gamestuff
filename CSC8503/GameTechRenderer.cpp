@@ -348,7 +348,10 @@ void GameTechRenderer::RenderCamera() {
     for (const auto& b : Debug::GetDebugVolumes()) {
         auto prevScale = b.location->GetScale();
         Vector3 newScale;
-        if (b.volume->type == VolumeType::AABB) {
+        if (b.volume->type == VolumeType::OBB) {
+            newScale = ((OBBVolume*)b.volume)->GetHalfDimensions() * 2;
+        }
+        else if (b.volume->type == VolumeType::AABB) {
             newScale = ((AABBVolume*)b.volume)->GetHalfDimensions() * 2;
         } else {
             auto sf = ((SphereVolume*)b.volume)->GetRadius();
@@ -368,7 +371,11 @@ void GameTechRenderer::RenderCamera() {
 
         size_t layerCount;
 
-        if (b.volume->type == VolumeType::AABB) {
+        if (b.volume->type == VolumeType::OBB) {
+            BindMesh((OGLMesh&)*cubeMesh);
+            layerCount = cubeMesh->GetSubMeshCount();
+        }
+        else if (b.volume->type == VolumeType::AABB) {
             BindMesh((OGLMesh&)*cubeMesh);
             layerCount = cubeMesh->GetSubMeshCount();
         } else {

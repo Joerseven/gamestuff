@@ -15,6 +15,7 @@ GameObject::GameObject(const std::string& objectName)	{
 	renderObject	= nullptr;
 	networkObject	= nullptr;
     collisionListener = nullptr;
+    stateMachine = nullptr;
 }
 
 GameObject::~GameObject()	{

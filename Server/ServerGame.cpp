@@ -3,6 +3,7 @@
 //
 
 #include "ServerGame.h"
+#define IHATEMYFUCKINGLIFE *
 
 GameObject* moreTheFloor;
 
@@ -76,7 +77,22 @@ ServerGame::~ServerGame() {
 
 void ServerGame::UpdateGame(float dt) {
 
+    grappleTimer -= dt;
+
     stateManager->Update(dt);
+
+    flagReady = true;
+
+    world->OperateOnContents([this] (GameObject* o){
+        if (o->name == "bomb") {
+            if (o->IsActive()) {
+                if (o->GetTransform().GetPosition().y < -20.0f) {
+                    ExplodeBomb(o);
+                }
+            }
+
+        }
+    });
 
     UpdatePlayers(dt);
 
@@ -98,6 +114,12 @@ void ServerGame::UpdateGame(float dt) {
     LimitPlayerLinearVelocitys();
     CheckOffMapPlayers();
 
+    world->OperateOnContents([dt](GameObject* g){
+        if (g->stateMachine) {
+            g->stateMachine->Update(dt);
+        }
+    });
+
 
     server->UpdateServer();
 }
@@ -111,7 +133,50 @@ void ServerGame::InitialiseEvents() {
             o->collisionListener = new Subject<GameObject*>();
             ListenFlagPickedUp(o);
         }
+
+        if (o->name == "bomb") {
+            bombs.push_back(o);
+            int playerNo = bombs.size() - 1;
+            o->collisionListener = new Subject<GameObject*>();
+            ListenBombDropped(players[playerNo], o);
+        }
     });
+}
+
+void ServerGame::ExplodeBomb(GameObject* bomb) {
+    bomb->GetPhysicsObject()->ClearForces();
+    bomb->GetPhysicsObject()->SetLinearVelocity(Vector3(0,0,0));
+
+    for (auto& p : players) {
+        auto disVector = bomb->GetTransform().GetPosition() - p->GetTransform().GetPosition();
+        if (disVector.Length() <= 15) {
+            auto colVector = disVector.Normalised();
+            p->GetPhysicsObject()->AddForce(-colVector * 50000.0f);
+        }
+    }
+
+    SetActiveNetworkObject(bomb->GetNetworkObject(), false);
+}
+
+void ServerGame::ListenBombDropped(GameObject* player, GameObject* bomb) {
+    auto obs = new Observer<GameObject*>();
+
+    obs->SetOnTrigger([=, this](GameObject* collidedWith) {
+        if (bomb->IsActive()) {
+
+            std::cout << "Triggering" << std::endl;
+            std::cout << collidedWith->name << std::endl;
+
+            std::cout << bomb->GetTransform().GetPosition().y << std::endl;
+            if ((collidedWith->name != "player" && !(collidedWith->GetPhysicsObject()->isTrigger))) {
+                std::cout << "Explode bomb!" << std::endl;
+                ExplodeBomb(bomb);
+            }
+        }
+        return false;
+    });
+
+    bomb->collisionListener->Attach(obs);
 }
 
 void ServerGame::CheckOffMapPlayers() {
@@ -230,6 +295,21 @@ void ServerGame::KillPlayer(GameObject* player) {
     player->GetTransform().SetPosition(spawnPoints[index]);
 }
 
+void ServerGame::ThrowBomb(int peerId) {
+    if (bombs[peerId]->IsActive()) {
+        return;
+    }
+
+    auto player = players[playerMap[peerId]];
+    auto playerForward =  Matrix3(player->GetTransform().GetOrientation()) * Vector3(0, 0, -1);
+
+    bombs[peerId]->GetTransform().SetPosition(player->GetTransform().GetPosition() + Matrix3(player->GetTransform().GetOrientation()) * Vector3(0, 1, -1));
+    bombs[peerId]->GetPhysicsObject()->AddForce((playerForward + Vector3(0, 0.5, 0)) * 5000);
+
+    SetActiveNetworkObject(bombs[peerId]->GetNetworkObject(), !bombs[peerId]->IsActive());
+
+}
+
 void ServerGame::ReceivePacket(int type, GamePacket *payload, int source) {
 
     if (!(playerRecievers[source]->CheckAndUpdateAcknowledged(*payload))) {
@@ -245,6 +325,10 @@ void ServerGame::ReceivePacket(int type, GamePacket *payload, int source) {
 
         if (id == Player_Ready) {
             playerReady[source] = !playerReady[source];
+        }
+
+        if (id == Player_Use) {
+            ThrowBomb(source);
         }
         return;
     }
@@ -310,6 +394,7 @@ void ServerGame::ListenFlagDropped(GameObject* playerWhoCaptured, GameObject* fl
             flag->GetTransform().SetPosition(transform.GetPosition());
             flag->GetTransform().SetOrientation(transform.GetOrientation());
 
+            flagReady = false;
             flag->collisionListener->Detach(flagReturnedObserver);
             ListenFlagPickedUp(flag);
             return true;
@@ -343,6 +428,9 @@ void ServerGame::ListenFlagDropped(GameObject* playerWhoCaptured, GameObject* fl
 
             std::cout << "Sent score to players" << std::endl;
 
+            // in the all collisions list if the player has a flag collision queued up goes infinite score.
+
+            flagReady = false;
             deathObserver->Detach(playerDeathObserver);
             ListenFlagPickedUp(flag);
             return true;
@@ -360,7 +448,7 @@ void ServerGame::ListenFlagPickedUp(GameObject* flag) {
     std::cout << "Flag pickup event attached" << std::endl;
 
     observer->SetOnTrigger([flag, this](GameObject* collidedWith){
-        if (collidedWith->name == "player") {
+        if (collidedWith->name == "player" && flagReady) {
 
             std::cout << "Flag being picked up!" << std::endl;
 
@@ -476,6 +564,11 @@ void ServerGame::AddObjectFromLua(lua_State *L) {
         netObjects.push_back(g->GetNetworkObject());
     }
 
+    if (getBool(L, "useState")) {
+        g->stateMachine = new StateMachine();
+        CreateMoveToState(g->stateMachine, g, getVec3Field(L, "path"));
+    }
+
     g->GetPhysicsObject()->isTrigger = getBool(L, "isTrigger");
 
     moreTheFloor = g;
@@ -496,6 +589,15 @@ void ServerGame::AddVolume(GameObject* g, const std::string& volumeType, lua_Sta
     if ("AABBVolume" == volumeType) {
         auto size = getVec3Field(L, "boundingSize");
         auto volume = new AABBVolume(size);
+        g->SetBoundingVolume((CollisionVolume*)volume);
+        g->SetPhysicsObject(new PhysicsObject(&g->GetTransform(), g->GetBoundingVolume()));
+        g->GetPhysicsObject()->SetInverseMass(getNumberField(L, "mass"));
+        g->GetPhysicsObject()->InitCubeInertia();
+    }
+
+    if ("OBBVolume" == volumeType) {
+        auto size = getVec3Field(L, "boundingSize");
+        auto volume = new OBBVolume(size);
         g->SetBoundingVolume((CollisionVolume*)volume);
         g->SetPhysicsObject(new PhysicsObject(&g->GetTransform(), g->GetBoundingVolume()));
         g->GetPhysicsObject()->SetInverseMass(getNumberField(L, "mass"));
@@ -537,7 +639,7 @@ void ServerGame::AddPlayerObjects() {
         float inverseMass	= 0.5f;
 
         auto character = new GameObject();
-        auto volume  = new AABBVolume(Vector3(meshSize * 0.7, meshSize * 1.5, meshSize * 0.7));
+        auto volume  = new OBBVolume(Vector3(meshSize * 0.7, meshSize * 1.5, meshSize * 0.7));
 
         character->SetBoundingVolume((CollisionVolume*)volume);
 
@@ -563,6 +665,47 @@ void ServerGame::AddPlayerObjects() {
         players[i] = character;
         world->AddGameObject(character);
     }
+}
+
+void ServerGame::CreateMoveToState(StateMachine* machine, GameObject* g, Vector3 change) {
+
+    Vector3 originalDestination = g->GetTransform().GetPosition();
+    Vector3 targetDestination = g->GetTransform().GetPosition() + change;
+    machine->elapsed = 0;
+    machine->duration = 2.0;
+
+    auto s = new State([=](float dt) {
+        machine->elapsed += dt;
+        auto t = machine->elapsed / machine->duration;
+        g->GetTransform().SetPosition(Vector3::Lerp(originalDestination, targetDestination, -(cosf(PI * t) - 1.0f) * 0.5f));
+    });
+
+    auto r = new State([=](float dt) {
+        machine->elapsed += dt;
+        auto t = machine->elapsed / machine->duration;
+        g->GetTransform().SetPosition(Vector3::Lerp(targetDestination, originalDestination, -(cosf(PI * t) - 1.0f) * 0.5f));
+    });
+
+    auto t = new StateTransition(s, r, [=]() {
+        if (machine->elapsed >= machine->duration) {
+            machine->elapsed = 0;
+            return true;
+        }
+        return false;
+    });
+
+    auto t2 = new StateTransition(r, s, [=] {
+        if (machine->elapsed >= machine->duration) {
+            machine->elapsed = 0;
+            return true;
+        }
+        return false;
+    });
+
+    machine->AddState(s);
+    machine->AddState(r);
+    machine->AddTransition(t);
+    machine->AddTransition(t2);
 }
 
 

@@ -2,6 +2,7 @@
 #include "Transform.h"
 #include "CollisionVolume.h"
 #include "Observer.h"
+#include "StateMachine.h"
 
 using std::vector;
 
@@ -86,6 +87,7 @@ namespace NCL::CSC8503 {
 
         Subject<GameObject*>* collisionListener;
         std::string	name;
+        StateMachine*       stateMachine;
     protected:
 		Transform			transform;
 
@@ -93,6 +95,8 @@ namespace NCL::CSC8503 {
 		PhysicsObject*		physicsObject;
 		RenderObject*		renderObject;
 		NetworkObject*		networkObject;
+
+
 
 		bool		isActive;
 		int			worldID;

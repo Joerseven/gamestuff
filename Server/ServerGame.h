@@ -22,6 +22,8 @@
 #include "PositionConstraint.h"
 #include "PushdownMachine.h"
 #include "PushdownState.h"
+#include "State.h"
+#include "StateTransition.h"
 
 using namespace NCL;
 using namespace CSC8503;
@@ -53,6 +55,7 @@ protected:
     int currentSnapshot;
     int netIdCounter;
 
+
     PushdownMachine* stateManager;
 
     void BroadcastSnapshot();
@@ -81,11 +84,17 @@ protected:
 
     FixedConstraint* flagConstraint;
 
+    std::vector<GameObject*> bombs;
+    std::vector<GameObject*> explosion;
+
     int playersJoined = 0;
+
+    bool flagReady = true;
 
     std::array<Vector3, 4> spawnPoints;
 
     int sentPackets = 0;
+    float grappleTimer = 3;
 
     ServerInfo serverInfo;
 
@@ -109,6 +118,14 @@ protected:
     void InitialiseEvents();
 
     void UpdatePlayerScore();
+
+    void CreateMoveToState(StateMachine *machine, GameObject *g, Vector3 change);
+
+    void ThrowBomb(int peerId);
+
+    void ListenBombDropped(GameObject *player, GameObject *bomb);
+
+    void ExplodeBomb(GameObject *bomb);
 };
 
 class ReadyScreenServer : public PushdownState {
