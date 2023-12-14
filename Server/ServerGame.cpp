@@ -280,6 +280,15 @@ void ServerGame::CatchupPlayerJoined(int peerId) {
     }
 }
 
+void ServerGame::UpdatePlayerScore() {
+    for (auto& sender: playerSenders) {
+        PlayerScores p{};
+        memcpy(p.values, playerScores.data(), 4 * sizeof(int));
+        auto fp = FunctionPacket<PlayerScores>(p, Functions::UpdatePlayerScore);
+        server->SendPacket(sender.second->RequireAcknowledgement(fp), sender.first);
+    }
+}
+
 void ServerGame::ListenFlagDropped(GameObject* playerWhoCaptured, GameObject* flag, Transform transform) {
     auto* playerDeathObserver = new Observer<GameObject*>();
     auto* flagReturnedObserver = new Observer<GameObject*>();
@@ -330,13 +339,7 @@ void ServerGame::ListenFlagDropped(GameObject* playerWhoCaptured, GameObject* fl
                 }
             }
 
-
-            for (auto& sender: playerSenders) {
-                PlayerScores p{};
-                memcpy(p.values, playerScores.data(), 4 * sizeof(int));
-                auto fp = FunctionPacket<PlayerScores>(p, Functions::UpdatePlayerScore);
-                server->SendPacket(sender.second->RequireAcknowledgement(fp), sender.first);
-            }
+            UpdatePlayerScore();
 
             std::cout << "Sent score to players" << std::endl;
 

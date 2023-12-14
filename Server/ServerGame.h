@@ -107,6 +107,8 @@ protected:
     void ListenFlagPickedUp(GameObject *flag);
     void ListenFlagDropped(GameObject *playerWhoCaptured, GameObject *flag, Transform transform);
     void InitialiseEvents();
+
+    void UpdatePlayerScore();
 };
 
 class ReadyScreenServer : public PushdownState {
