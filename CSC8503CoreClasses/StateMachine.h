@@ -11,15 +11,19 @@ namespace NCL {
 		class StateMachine	{
 		public:
 			StateMachine();
-			virtual ~StateMachine(); //made it virtual!
+			~StateMachine(); // Nu uh
 
 			void AddState(State* s);
 			void AddTransition(StateTransition* t);
 
-			virtual void Update(float dt); //made it virtual!
+			void Update(float dt); // Nu uh
+
+            float elapsed;
+            float duration;
 
 		protected:
 			State * activeState;
+
 
 			std::vector<State*> allStates;
 			TransitionContainer allTransitions;

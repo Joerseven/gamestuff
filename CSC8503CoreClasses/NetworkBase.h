@@ -1,5 +1,7 @@
 #pragma once
 //#include "./enet/enet.h"
+#include "lua.hpp"
+#include "stb/stb_image.h"
 struct _ENetHost;
 struct _ENetPeer;
 struct _ENetEvent;
@@ -14,17 +16,23 @@ enum BasicNetworkMessages {
 	Player_Connected,
 	Player_Disconnected,
 	Shutdown,
-    Server_Message
+    Server_Message,
+    Acknowledge_Packet,
+    Function // KEEP THIS LAST
 };
 
 struct GamePacket {
 	short size;
 	short type;
+    int acknowledge;
 
 	GamePacket() {
 		type		= BasicNetworkMessages::None;
 		size		= 0;
+        acknowledge = -1;
 	}
+
+    virtual ~GamePacket() = default;
 
 	GamePacket(short type) : GamePacket() {
 		this->type	= type;
@@ -33,6 +41,16 @@ struct GamePacket {
 	int GetTotalSize() {
 		return sizeof(GamePacket) + size;
 	}
+};
+
+struct MessagePacket : public GamePacket {
+    short playerID;
+    short messageID;
+
+    MessagePacket() {
+        type = Message;
+        size = sizeof(short) * 2;
+    }
 };
 
 class PacketReceiver {

@@ -5,8 +5,8 @@ set(PROJECT_NAME CSC8503)
 ################################################################################
 set(Header_Files
     "GameTechRenderer.h"
-    "NetworkedGame.h"
-    "NetworkPlayer.h"
+#    "NetworkedGame.h"
+#    "NetworkPlayer.h"
     "StateGameObject.h"
     "TutorialGame.h"
 )
@@ -15,12 +15,10 @@ source_group("Header Files" FILES ${Header_Files})
 set(Source_Files
     "GameTechRenderer.cpp"
     "Main.cpp"
-    "NetworkedGame.cpp"
-    "NetworkPlayer.cpp"
+#    "NetworkedGame.cpp"
+#    "NetworkPlayer.cpp"
     "StateGameObject.cpp"
     "TutorialGame.cpp"
-	"../Client/ClientGame.cpp"
-	"../Server/ServerGame.cpp"
 )
 
 if(USE_VULKAN)
@@ -211,6 +209,7 @@ include_directories(".")
 target_link_libraries(${PROJECT_NAME} LINK_PUBLIC NCLCoreClasses)
 target_link_libraries(${PROJECT_NAME} LINK_PUBLIC CSC8503CoreClasses)
 target_link_libraries(${PROJECT_NAME} LINK_PUBLIC OpenGLRendering)
+target_link_libraries(${PROJECT_NAME} LINK_PUBLIC freetype)
 
 if(USE_VULKAN)
     include_directories("../VulkanRendering/")

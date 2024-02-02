@@ -10,6 +10,27 @@ using namespace NCL;
 using namespace Maths;
 using namespace CSC8503;
 
+// Let me put a vector in this you stupid header file >:(
+FixedConstraint::FixedConstraint(GameObject* attach, GameObject* attachTo, float a, float b, float c) {
+    objectA		= attach;
+    objectB		= attachTo;
+    this->a = a;
+    this->b = b;
+    this->c = c;
+}
+
+void FixedConstraint::UpdateConstraint(float dt) {
+    objectA->GetPhysicsObject()->SetLinearVelocity(Vector3());
+    auto adjustedOffset = (Matrix4(objectB->GetTransform().GetOrientation())
+            * Matrix4::Translation({a,b,c})).GetPositionVector();
+    objectA->GetTransform().SetPosition(objectB->GetTransform().GetPosition() + adjustedOffset);
+    objectA->GetTransform().SetOrientation(objectB->GetTransform().GetOrientation());
+}
+
+FixedConstraint::~FixedConstraint() {
+
+}
+
 PositionConstraint::PositionConstraint(GameObject* a, GameObject* b, float d)
 {
 	objectA		= a;
@@ -22,8 +43,6 @@ PositionConstraint::~PositionConstraint()
 
 }
 
-//a simple constraint that stops objects from being more than <distance> away
-//from each other...this would be all we need to simulate a rope, or a ragdoll
 void PositionConstraint::UpdateConstraint(float dt)	{
     Vector3 relativePos = objectA->GetTransform().GetPosition()
             - objectB->GetTransform().GetPosition();
@@ -51,7 +70,7 @@ void PositionConstraint::UpdateConstraint(float dt)	{
             Vector3 bImpulse = -offsetDir * lambda;
 
             physA->ApplyLinearImpulse(aImpulse);
-            physB->ApplyLinearImpulse(bImpulse);
+            physB->ApplyLinearImpulse(aImpulse);
         }
     }
 }

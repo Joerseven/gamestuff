@@ -46,17 +46,19 @@ void main(void)
 	 albedo *= texture(mainTex, IN.texCoord);
 	}
 	
-	albedo.rgb = pow(albedo.rgb, vec3(2.2));
-	
-	fragColor.rgb = albedo.rgb * 0.05f; //ambient
-	
-	fragColor.rgb += albedo.rgb * lightColour.rgb * lambert * shadow; //diffuse light
-	
-	fragColor.rgb += lightColour.rgb * sFactor * shadow; //specular light
-	
-	fragColor.rgb = pow(fragColor.rgb, vec3(1.0 / 2.2f));
-	
-	fragColor.a = albedo.a;
+//	albedo.rgb = pow(albedo.rgb, vec3(2.2));
+//
+//	fragColor.rgb = albedo.rgb * 0.05f; //ambient
+//
+//	fragColor.rgb += albedo.rgb * lightColour.rgb * lambert * shadow; //diffuse light
+//
+//	fragColor.rgb += lightColour.rgb * sFactor * shadow; //specular light
+//
+//	fragColor.rgb = pow(fragColor.rgb, vec3(1.0 / 2.2f));
+//
+//	fragColor.a = albedo.a;
+
+	fragColor = vec4(vec3(albedo) * 0.5, 1.0);
 
 //fragColor.rgb = IN.normal;
 

@@ -12,13 +12,13 @@ NetworkObject::NetworkObject(GameObject& o, int id) : object(o)	{
 NetworkObject::~NetworkObject()	{
 }
 
-bool NetworkObject::ReadPacket(GamePacket& p) {
+bool NetworkObject::ReadPacket(GamePacket& p, TweenManager* tweenManager) {
     if (p.type == Delta_State) {
         return ReadDeltaPacket((DeltaPacket&)p);
     }
 
     if (p.type == Full_State) {
-        return ReadFullPacket((FullPacket&)p);
+        return ReadFullPacket((FullPacket&)p, tweenManager);
     }
 	return false;
 }
@@ -57,17 +57,25 @@ bool NetworkObject::ReadDeltaPacket(DeltaPacket &p) {
 
 }
 
-bool NetworkObject::ReadFullPacket(FullPacket &p) {
+bool NetworkObject::ReadFullPacket(FullPacket &p, TweenManager* tweenManager) {
 	if (p.fullState.stateID < lastFullState.stateID) {
         return false;
     }
 
     lastFullState = p.fullState;
 
-    object.GetTransform().SetPosition(lastFullState.position);
-    object.GetTransform().SetOrientation(lastFullState.orientation);
+    if ((object.GetTransform().GetPosition() - lastFullState.position).LengthSquared() > 50) {
+        object.GetTransform().SetPosition(lastFullState.position);
+        tweenManager->ClearTween(&object.GetTransform());
+    } else {
+        tweenManager->Create(&object.GetTransform(), Transform().SetPosition(lastFullState.position).SetOrientation(lastFullState.orientation).SetScale(object.GetTransform().GetScale()), 0.1);
+    }
 
-    object.SetActive(true);
+
+//    object.GetTransform().SetPosition(lastFullState.position);
+//    object.GetTransform().SetOrientation(lastFullState.orientation);
+
+    //object.SetActive(true);
 
     stateHistory.emplace_back(lastFullState);
 
@@ -108,6 +116,7 @@ bool NetworkObject::WriteFullPacket(GamePacket**p) {
 	FullPacket* fp = new FullPacket();
     fp->objectID = networkID;
     fp->fullState.position = object.GetTransform().GetPosition();
+    fp->fullState.orientation = object.GetTransform().GetOrientation();
     fp->fullState.stateID = lastFullState.stateID++;
     *p = fp;
     return true;

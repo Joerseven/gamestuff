@@ -76,6 +76,7 @@ include_directories(NCLCoreClasses)
 include_directories(OpenGLRendering)
 include_directories(CSC8503)
 include_directories(Replicated)
+include_directories(lua)
 
 ################################################################################
 # Sub-projects
@@ -87,6 +88,7 @@ add_subdirectory(OpenGLRendering)
 add_subdirectory(CSC8503)
 add_subdirectory(Server)
 add_subdirectory(Client)
+add_subdirectory(tex)
 if(USE_VULKAN)
     add_subdirectory(VulkanRendering)
 endif()

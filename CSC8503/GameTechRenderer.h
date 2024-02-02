@@ -12,15 +12,33 @@ namespace NCL {
 	namespace CSC8503 {
 		class RenderObject;
 
+        struct Character {
+            unsigned int TextureID;  // ID handle of the glyph texture
+            Vector2i   Size;       // Size of glyph
+            Vector2i  Bearing;    // Offset from baseline to left/top of glyph
+            unsigned int Advance;    // Offset to advance to next glyph
+        };
+
+        struct RenderStrings {
+            std::string text;
+            float x;
+            float y;
+            float scale;
+            Vector3 color;
+        };
+
 		class GameTechRenderer : public OGLRenderer	{
 		public:
 			GameTechRenderer(GameWorld& world);
 			~GameTechRenderer();
 
 			Mesh*		LoadMesh(const std::string& name);
-            Mesh*       LoadOBJMesh(const std::string& name);
+            Mesh*       LoadOBJMesh(const std::string& name, Vector3 localOffset = {0,0,0});
 			Texture*	LoadTexture(const std::string& name);
 			Shader*		LoadShader(const std::string& vertex, const std::string& fragment);
+
+            void AddRenderText(std::string s, float x, float y, float scale, Vector3 color);
+
 
 		protected:
 			void NewRenderLines();
@@ -37,6 +55,11 @@ namespace NCL {
 			void RenderShadowMap();
 			void RenderCamera(); 
 			void RenderSkybox();
+            void RenderText(std::string text, float x, float y, float scale, Vector3 color);
+
+            void LoadFont();
+
+            void RenderDebugVolumes();
 
 			void LoadSkybox();
 
@@ -49,6 +72,14 @@ namespace NCL {
 			OGLShader*  skyboxShader;
 			OGLMesh*	skyboxMesh;
 			GLuint		skyboxTex;
+            OGLShader*  textShader;
+
+            OGLShader* sceneShader;
+
+            Mesh* cubeMesh;
+            Mesh* sphereMesh;
+
+            std::vector<RenderStrings> stringsToRender;
 
 			//shadow mapping things
 			OGLShader*	shadowShader;
@@ -59,6 +90,8 @@ namespace NCL {
 			Vector4		lightColour;
 			float		lightRadius;
 			Vector3		lightPosition;
+
+            std::map<char, Character> Characters;
 
 			//Debug data storage things
 			vector<Vector3> debugLineData;
@@ -76,6 +109,9 @@ namespace NCL {
 			GLuint textColourVBO;
 			GLuint textTexVBO;
 			size_t textCount;
+
+            GLuint betterTextVAO;
+            GLuint betterTextVBO;
 		};
 	}
 }

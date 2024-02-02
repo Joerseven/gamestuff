@@ -3,13 +3,23 @@
 //
 
 #include "ServerGame.h"
+#define IHATEMYFUCKINGLIFE *
+
+GameObject* moreTheFloor;
 
 ServerGame::ServerGame() {
 
     NetworkBase::Initialise();
-    server = new GameServer(NetworkBase::GetDefaultPort(), 4);
+    server = new GameServer(NetworkBase::GetDefaultPort(), 4,[&](int peerId) {
+        CreatePlayer(peerId);
+    },
+                            [&](int peerId) {
+        KillPlayer(players[playerMap[peerId]]);
+        PlayerLeft(peerId);
+    });
     server->RegisterPacketHandler(Received_State, this);
     server->RegisterPacketHandler(Server_Message, this);
+    server->RegisterPacketHandler(Acknowledge_Packet, this);
 
     std::cout << "Server starting up" << std::endl;
 
@@ -18,7 +28,13 @@ ServerGame::ServerGame() {
 
     forceMagnitude = 10.0f;
     timeToNextPacket  = 0.0f;
-    netIdCounter = 0;
+    netIdCounter = 3; // Players added will bring it up to 3. Why did I do it like this it's like I'm incapable of writing code like a normal human.
+
+    jumpForgiveness = 0;
+
+    stateManager = new PushdownMachine(new ReadyScreenServer(this));
+
+    playerScores.fill(0);
 
     physics->UseGravity(true);
 
@@ -27,16 +43,28 @@ ServerGame::ServerGame() {
     lua_State *L = luaL_newstate();
     luaL_openlibs(L);
 
-    auto status = luaL_dofile(L, "../Assets/Data/Levels.lua");
+    RegisterFunctions(L);
+
+    auto status = luaL_dofile(L, ASSETROOTLOCATION "Data/Levels.lua");
 
     if (status) {
         std::cerr << "Lua file giga dead: " << lua_tostring(L, -1);
         exit(1);
     }
 
-    lua_close(L);
+    lua_getglobal(L, "spawnPoints");
+    for (int i = 0; i < spawnPoints.size(); i++) {
+        spawnPoints[i] = getVec3Field(L, i+1);
+    }
+    lua_pop(L, 1);
 
-    InitWorld();
+    AddPlayerObjects();
+
+    LoadLevel(L, 1);
+
+    InitialiseEvents();
+
+    lua_close(L);
 
 }
 
@@ -44,23 +72,152 @@ ServerGame::~ServerGame() {
     delete physics;
     delete world;
     delete server;
+    delete deathObserver;
 }
 
 void ServerGame::UpdateGame(float dt) {
 
-    server->UpdateServer();
+    grappleTimer -= dt;
+
+    stateManager->Update(dt);
+
+    flagReady = true;
+
+    world->OperateOnContents([this] (GameObject* o){
+        if (o->name == "bomb") {
+            if (o->IsActive()) {
+                if (o->GetTransform().GetPosition().y < -20.0f) {
+                    ExplodeBomb(o);
+                }
+            }
+
+        }
+    });
+
+    UpdatePlayers(dt);
 
     timeToNextPacket -= dt;
     if (timeToNextPacket < 0) {
         BroadcastSnapshot();
-        timeToNextPacket += 1.0f / 20.0f;
+        timeToNextPacket += SERVERHERTZ;
+        for (auto& m : playerRecievers) {
+            m.second->SendAcknowledgement();
+        }
+        for (auto& m : playerSenders) {
+            m.second->CatchupPackets();
+        }
     }
 
     world->UpdateWorld(dt);
     physics->Update(dt);
+
+    LimitPlayerLinearVelocitys();
+    CheckOffMapPlayers();
+
+    world->OperateOnContents([dt](GameObject* g){
+        if (g->stateMachine) {
+            g->stateMachine->Update(dt);
+        }
+    });
+
+
+    server->UpdateServer();
+}
+
+void ServerGame::InitialiseEvents() {
+
+    deathObserver = new Subject<GameObject*>();
+
+    world->OperateOnContents([this] (GameObject* o){
+        if (o->name == "flag") {
+            o->collisionListener = new Subject<GameObject*>();
+            ListenFlagPickedUp(o);
+        }
+
+        if (o->name == "bomb") {
+            bombs.push_back(o);
+            int playerNo = bombs.size() - 1;
+            o->collisionListener = new Subject<GameObject*>();
+            ListenBombDropped(players[playerNo], o);
+        }
+    });
+}
+
+void ServerGame::ExplodeBomb(GameObject* bomb) {
+    bomb->GetPhysicsObject()->ClearForces();
+    bomb->GetPhysicsObject()->SetLinearVelocity(Vector3(0,0,0));
+
+    for (auto& p : players) {
+        auto disVector = bomb->GetTransform().GetPosition() - p->GetTransform().GetPosition();
+        if (disVector.Length() <= 15) {
+            auto colVector = disVector.Normalised();
+            p->GetPhysicsObject()->AddForce(-colVector * 50000.0f);
+        }
+    }
+
+    SetActiveNetworkObject(bomb->GetNetworkObject(), false);
+}
+
+void ServerGame::ListenBombDropped(GameObject* player, GameObject* bomb) {
+    auto obs = new Observer<GameObject*>();
+
+    obs->SetOnTrigger([=, this](GameObject* collidedWith) {
+        if (bomb->IsActive()) {
+
+            std::cout << "Triggering" << std::endl;
+            std::cout << collidedWith->name << std::endl;
+
+            std::cout << bomb->GetTransform().GetPosition().y << std::endl;
+            if ((collidedWith->name != "player" && !(collidedWith->GetPhysicsObject()->isTrigger))) {
+                std::cout << "Explode bomb!" << std::endl;
+                ExplodeBomb(bomb);
+            }
+        }
+        return false;
+    });
+
+    bomb->collisionListener->Attach(obs);
+}
+
+void ServerGame::CheckOffMapPlayers() {
+    for (int i=0; i<players.size(); i++) {
+        if (players[i]->GetTransform().GetPosition().y < -20) {
+            KillPlayer(players[i]);
+            deathObserver->Trigger(players[i]);
+        }
+    }
+}
+
+void ServerGame::UpdatePlayers(float dt) {
+    for (auto it = playerControls.begin(); it != playerControls.end(); it++) {
+
+        if (playerMap.find(it->first) == playerMap.end()) {
+            return;
+        }
+
+        auto player = players[playerMap[it->first]];
+        auto &pressed = it->second;
+        float mag = 10.0f;
+
+        jumpForgiveness -= dt;
+
+        if (CheckPlayerOnGround(player)) {
+            jumpForgiveness = 0.5;
+        }
+
+        player->GetTransform()
+            .SetOrientation(Quaternion::AxisAngleToQuaterion({0, 1, 0}, *((float*)&pressed[1])).Normalised());
+
+        if (!CheckPlayerOnGround(player)) {
+            mag = 0.1f;
+        }
+
+        player->GetPhysicsObject()->AddForce(player->GetTransform().GetOrientation() * Vector3(0, 0, ((float)pressed[0] * mag * -1) + ((float)pressed[6] * mag)));
+    }
 }
 
 void ServerGame::BroadcastSnapshot() {
+    sentPackets++;
     std::vector<GameObject*>::const_iterator first;
     std::vector<GameObject*>::const_iterator last;
 
@@ -87,25 +244,236 @@ void ServerGame::BroadcastSnapshot() {
     }
 }
 
-void ServerGame::InitWorld() {
-    AddFloorToWorld({0, -20, 0});
-    AddPlayerObjects({0,0,0});
-}
-
 void DebugPackets(int type, GamePacket *payload, int source) {
     std::cout << "Recieved Packet: " << std::endl;
     std::cout << "type: " << type << std::endl;
     std::cout << "source: " << source << std::endl;
 }
 
-void ServerGame::ReceivePacket(int type, GamePacket *payload, int source) {
-    //DebugPackets(type, payload, source);
-    if (type == Server_Message) {
-        auto id = ((ServerMessagePacket*)payload)->messageID;
-        if (id == Player_Loaded) {
-            CreatePlayer(source);
+GameObject* ServerGame::GetPlayerFromPeer(int peerId) {
+    return players[playerMap[peerId]];
+}
+
+bool ServerGame::CheckPlayerOnGround(GameObject* player) {
+
+    Ray jumpChecker(player->GetTransform().GetPosition(), Vector3(0, -1, 0));
+    RayCollision collisionInfo;
+
+    if (world->Raycast(jumpChecker, collisionInfo, true, player)) {
+        auto distance = player->GetTransform().GetPosition().y
+                        - collisionInfo.collidedAt.y
+                        - ((AABBVolume*)player->GetBoundingVolume())->GetHalfDimensions().y;
+        if (distance <= 0.1) {
+            return true;
         }
     }
+
+    return false;
+}
+
+void ServerGame::PlayerJump(int peerId) {
+
+    auto player = players[playerMap[peerId]];
+
+    if (jumpForgiveness > 0) {
+        player->GetPhysicsObject()->AddForce(Vector3(0, 5000, 0));
+        jumpForgiveness = 0;
+    }
+}
+
+void ServerGame::KillPlayer(GameObject* player) {
+    // this is terrible but it's nearly wednesday
+    auto index = 0;
+    for (int i=0; i<players.size(); i++) {
+        if (players[i] == player) {
+            index = i;
+        }
+    }
+    deathObserver->Trigger(player);
+    player->GetPhysicsObject()->ClearForces();
+    player->GetPhysicsObject()->SetLinearVelocity(Vector3(0,0,0));
+    player->GetTransform().SetPosition(spawnPoints[index]);
+}
+
+void ServerGame::ThrowBomb(int peerId) {
+    if (bombs[peerId]->IsActive()) {
+        return;
+    }
+
+    auto player = players[playerMap[peerId]];
+    auto playerForward =  Matrix3(player->GetTransform().GetOrientation()) * Vector3(0, 0, -1);
+
+    bombs[peerId]->GetTransform().SetPosition(player->GetTransform().GetPosition() + Matrix3(player->GetTransform().GetOrientation()) * Vector3(0, 1, -1));
+    bombs[peerId]->GetPhysicsObject()->AddForce((playerForward + Vector3(0, 0.5, 0)) * 5000);
+
+    SetActiveNetworkObject(bombs[peerId]->GetNetworkObject(), !bombs[peerId]->IsActive());
+
+}
+
+void ServerGame::ReceivePacket(int type, GamePacket *payload, int source) {
+
+    if (!(playerRecievers[source]->CheckAndUpdateAcknowledged(*payload))) {
+        return;
+    };
+
+    if (type == Server_Message) {
+        auto id = ((ServerMessagePacket*)payload)->messageID;
+        if (id == Player_Jump) {
+            PlayerJump(source);
+            //players[playerMap[source]]->GetPhysicsObject()->AddForce(Vector3(0, 1000, 0));
+        }
+
+        if (id == Player_Ready) {
+            playerReady[source] = !playerReady[source];
+        }
+
+        if (id == Player_Use) {
+            ThrowBomb(source);
+        }
+        return;
+    }
+
+    if (type == Received_State) {
+        auto exists = playerMap.find(source) != playerMap.end();
+        if (exists) {
+            auto pressed = ((ClientPacket*)payload)->buttonstates;
+            float mag = 100.0f;
+            memcpy(playerControls[source].data(), pressed, 8*sizeof(char));
+        }
+        return;
+    }
+
+    if (type == Acknowledge_Packet) {
+        playerSenders[source]->ReceiveAcknowledgement(((AcknowledgePacket*)payload)->acknowledge);
+    }
+}
+
+
+void ServerGame::SetActiveNetworkObject(NetworkObject* networkObject, bool active) {
+    for (auto& ps : playerSenders) {
+        networkObject->object.SetActive(active);
+        FunctionPacket p(SetNetworkObjectActive{networkObject->networkID, networkObject->object.IsActive()}, Functions::SetNetworkObjectActive);
+        server->SendPacket(ps.second->RequireAcknowledgement(p), ps.first);
+    }
+}
+
+void ServerGame::CatchupPlayerJoined(int peerId) {
+    for (auto& n : netObjects) {
+        FunctionPacket p(SetNetworkObjectActive{n->networkID, n->object.IsActive()}, Functions::SetNetworkObjectActive);
+        server->SendPacket(playerSenders[peerId]->RequireAcknowledgement(p), peerId);
+    }
+}
+
+void ServerGame::UpdatePlayerScore() {
+    for (auto& sender: playerSenders) {
+        PlayerScores p{};
+        memcpy(p.values, playerScores.data(), 4 * sizeof(int));
+        auto fp = FunctionPacket<PlayerScores>(p, Functions::UpdatePlayerScore);
+        server->SendPacket(sender.second->RequireAcknowledgement(fp), sender.first);
+    }
+}
+
+void ServerGame::ListenFlagDropped(GameObject* playerWhoCaptured, GameObject* flag, Transform transform) {
+    auto* playerDeathObserver = new Observer<GameObject*>();
+    auto* flagReturnedObserver = new Observer<GameObject*>();
+
+    std::cout << "Flag reset event attached" << std::endl;
+
+    playerDeathObserver->SetOnTrigger([=, this](GameObject* playerWhoDied) {
+        if (playerWhoDied == playerWhoCaptured) {
+
+            std::cout << "Flag being put back!" << std::endl;
+
+            flag->GetPhysicsObject()->SetInverseMass(0);
+
+            // This is not a real constraint no marks plz
+            world->RemoveConstraint(flagConstraint);
+            delete flagConstraint;
+            flagConstraint = nullptr;
+
+            flag->GetTransform().SetPosition(transform.GetPosition());
+            flag->GetTransform().SetOrientation(transform.GetOrientation());
+
+            flagReady = false;
+            flag->collisionListener->Detach(flagReturnedObserver);
+            ListenFlagPickedUp(flag);
+            return true;
+        }
+
+        return false;
+    });
+
+    flagReturnedObserver->SetOnTrigger([=, this](GameObject* collidedWith) {
+        if (collidedWith->name == "spawn") {
+
+            std::cout << "Player reached spawn with flag!" << std::endl;
+
+            flag->GetPhysicsObject()->SetInverseMass(0);
+
+            world->RemoveConstraint(flagConstraint);
+            delete flagConstraint;
+            flagConstraint = nullptr;
+
+            flag->GetTransform().SetPosition(transform.GetPosition());
+            flag->GetTransform().SetOrientation(transform.GetOrientation());
+
+            for (int i=0; i < players.size(); i++) {
+                if (players[i] == playerWhoCaptured) {
+                    playerScores[i] += 1;
+                    std::cout << "Player got a score!" << std::endl;
+                }
+            }
+
+            UpdatePlayerScore();
+
+            std::cout << "Sent score to players" << std::endl;
+
+            // in the all collisions list if the player has a flag collision queued up goes infinite score.
+
+            flagReady = false;
+            deathObserver->Detach(playerDeathObserver);
+            ListenFlagPickedUp(flag);
+            return true;
+        }
+        return false;
+    });
+
+    deathObserver->Attach(playerDeathObserver);
+    flag->collisionListener->Attach(flagReturnedObserver);
+}
+
+void ServerGame::ListenFlagPickedUp(GameObject* flag) {
+    Observer<GameObject*>* observer = new Observer<GameObject*>();
+
+    std::cout << "Flag pickup event attached" << std::endl;
+
+    observer->SetOnTrigger([flag, this](GameObject* collidedWith){
+        if (collidedWith->name == "player" && flagReady) {
+
+            std::cout << "Flag being picked up!" << std::endl;
+
+            auto originalFlagTransform = flag->GetTransform();
+
+            // This is not a real constraint :(
+            flagConstraint = new FixedConstraint(flag, collidedWith, 0, 2, 0.6);
+            world->AddConstraint(flagConstraint);
+            //flag->GetPhysicsObject()->SetInverseMass(1.0f/2);
+
+
+            ListenFlagDropped(collidedWith, flag, originalFlagTransform);
+            return true;
+        }
+
+        return false;
+    });
+
+    flag->collisionListener->Attach(observer);
+}
+
+void ServerGame::AssignPlayer(NetworkObject* obj, int peerId) {
+    FunctionPacket p(AssignPlayerFunction{obj->networkID, peerId}, Functions::AssignPlayerFunction);
+    playerSenders[peerId]->RequireAcknowledgement(p);
+    server->SendPacket(p, peerId);
 }
 
 GameObject *ServerGame::CreatePlayer(int peerId) {
@@ -121,21 +489,120 @@ GameObject *ServerGame::CreatePlayer(int peerId) {
         break;
     }
 
+    playerSenders.insert(std::make_pair(peerId, new SenderAcknowledger(server, peerId)));
+    playerRecievers.insert(std::make_pair(peerId, new RecieverAcknowledger(server, peerId)));
     playerMap.insert(std::make_pair(peerId, freeIndex));
-    players[playersJoined]->SetActive(true);
+    playerReady.insert(std::make_pair(peerId, false));
+
+    SetActiveNetworkObject(players[freeIndex]->GetNetworkObject(), true);
+    AssignPlayer(players[freeIndex]->GetNetworkObject(), peerId);
+    CatchupPlayerJoined(peerId);
 
     std::cout << "Player added successfully!" << std::endl;
 
-    return players[playersJoined];
+    return players[freeIndex];
 }
 
 void ServerGame::PlayerLeft(int peerId) {
-    playersJoined--;
-    players[playerMap[peerId]]->SetActive(false);
+
+    std::cout << "Leaving rotation is: " << players[playerMap[peerId]]->GetTransform().GetOrientation() << std::endl;
+
+    SetActiveNetworkObject(players[playerMap[peerId]]->GetNetworkObject(), false);
+
+    serverInfo.playerIds[playerMap[peerId]] = -1;
+    playerSenders.erase(peerId);
+    playerRecievers.erase(peerId);
     playerMap.erase(peerId);
 
     std::cout << "Player removed successfully" << std::endl;
 
+}
+
+void ServerGame::LimitPlayerLinearVelocitys() {
+    for (int i=0; i<players.size(); i++) {
+        auto maxSpeed = 10.0f;
+        if (!CheckPlayerOnGround(players[i]))
+            maxSpeed = 20.0f;
+
+        auto playPhs = players[i]->GetPhysicsObject();
+        auto mag = playPhs->GetLinearVelocity().Length();
+
+        if (mag >= maxSpeed) {
+            playPhs->SetLinearVelocity(playPhs->GetLinearVelocity().Normalised() * maxSpeed);
+        }
+    }
+}
+
+void ServerGame::LoadLevel(lua_State *L, int level) {
+    lua_getglobal(L, "levels");
+    lua_pushnumber(L, level);
+    lua_gettable(L, -2);
+
+    lua_pushnil(L);
+    while (lua_next(L, -2)) {
+        AddObjectFromLua(L);
+        lua_pop(L, 1);
+    }
+}
+
+void ServerGame::AddObjectFromLua(lua_State *L) {
+    // object table is on top of the stack
+    GameObject* g = new GameObject(getStringField(L, "name"));
+    g->SetActive(getBool(L, "active"));
+    Vector3 size = getVec3Field(L, "size");
+    Vector3 position = getVec3Field(L, "position");
+
+    g->GetTransform()
+            .SetPosition(position)
+            .SetScale(size);
+
+    auto volumeType = getStringField(L, "bounding");
+    AddVolume(g, volumeType, L);
+
+    if (getBool(L, "network")) {
+        g->SetNetworkObject(new NetworkObject(*g, ++netIdCounter));
+        netObjects.push_back(g->GetNetworkObject());
+    }
+
+    if (getBool(L, "useState")) {
+        g->stateMachine = new StateMachine();
+        CreateMoveToState(g->stateMachine, g, getVec3Field(L, "path"));
+    }
+
+    g->GetPhysicsObject()->isTrigger = getBool(L, "isTrigger");
+
+    moreTheFloor = g;
+
+    world->AddGameObject(g);
+}
+
+void ServerGame::AddVolume(GameObject* g, const std::string& volumeType, lua_State *L) {
+    if ("SphereVolume" == volumeType) {
+        auto size = getNumberField(L, "boundingSize");
+        auto volume  = new SphereVolume(size);
+        g->SetBoundingVolume((CollisionVolume*)volume);
+        g->SetPhysicsObject(new PhysicsObject(&g->GetTransform(), g->GetBoundingVolume()));
+        g->GetPhysicsObject()->SetInverseMass(getNumberField(L, "mass"));
+        g->GetPhysicsObject()->InitSphereInertia();
+    }
+
+    if ("AABBVolume" == volumeType) {
+        auto size = getVec3Field(L, "boundingSize");
+        auto volume = new AABBVolume(size);
+        g->SetBoundingVolume((CollisionVolume*)volume);
+        g->SetPhysicsObject(new PhysicsObject(&g->GetTransform(), g->GetBoundingVolume()));
+        g->GetPhysicsObject()->SetInverseMass(getNumberField(L, "mass"));
+        g->GetPhysicsObject()->InitCubeInertia();
+    }
+
+    if ("OBBVolume" == volumeType) {
+        auto size = getVec3Field(L, "boundingSize");
+        auto volume = new OBBVolume(size);
+        g->SetBoundingVolume((CollisionVolume*)volume);
+        g->SetPhysicsObject(new PhysicsObject(&g->GetTransform(), g->GetBoundingVolume()));
+        g->GetPhysicsObject()->SetInverseMass(getNumberField(L, "mass"));
+        g->GetPhysicsObject()->InitCubeInertia();
+    }
 }
 
 
@@ -146,6 +613,7 @@ GameObject* ServerGame::AddFloorToWorld(const Vector3& position) {
     AABBVolume* volume = new AABBVolume(floorSize);
     floor->SetBoundingVolume((CollisionVolume*)volume);
     floor->GetTransform()
+            .SetScale(floorSize * 2)
             .SetScale(floorSize * 2)
             .SetPosition(position);
 
@@ -165,32 +633,79 @@ void ServerGame::ClearPlayers() {
     }
 }
 
-void ServerGame::AddPlayerObjects(const Vector3 &position) {
+void ServerGame::AddPlayerObjects() {
     for (int i = 0; i < players.size(); i++) {
         float meshSize		= 1.0f;
         float inverseMass	= 0.5f;
 
         auto character = new GameObject();
-        auto volume  = new SphereVolume(1.0f);
+        auto volume  = new OBBVolume(Vector3(meshSize * 0.7, meshSize * 1.5, meshSize * 0.7));
 
         character->SetBoundingVolume((CollisionVolume*)volume);
 
         character->GetTransform()
                 .SetScale(Vector3(meshSize, meshSize, meshSize))
-                .SetPosition(position);
+                .SetPosition(spawnPoints[i]);
 
         character->SetPhysicsObject(new PhysicsObject(&character->GetTransform(), character->GetBoundingVolume()));
 
         character->GetPhysicsObject()->SetInverseMass(inverseMass);
         character->GetPhysicsObject()->InitSphereInertia();
+        character->GetPhysicsObject()->restitutionModifier = 0.0f;
 
         character->SetNetworkObject(new NetworkObject(*character, i));
+        netObjects.push_back(character->GetNetworkObject());
+
+        character->collisionListener = new Subject<GameObject*>();
+
+        character->name = "player";
 
         character->SetActive(false);
 
         players[i] = character;
         world->AddGameObject(character);
     }
+}
+
+void ServerGame::CreateMoveToState(StateMachine* machine, GameObject* g, Vector3 change) {
+
+    Vector3 originalDestination = g->GetTransform().GetPosition();
+    Vector3 targetDestination = g->GetTransform().GetPosition() + change;
+    machine->elapsed = 0;
+    machine->duration = 2.0;
+
+    auto s = new State([=](float dt) {
+        machine->elapsed += dt;
+        auto t = machine->elapsed / machine->duration;
+        g->GetTransform().SetPosition(Vector3::Lerp(originalDestination, targetDestination, -(cosf(PI * t) - 1.0f) * 0.5f));
+    });
+
+    auto r = new State([=](float dt) {
+        machine->elapsed += dt;
+        auto t = machine->elapsed / machine->duration;
+        g->GetTransform().SetPosition(Vector3::Lerp(targetDestination, originalDestination, -(cosf(PI * t) - 1.0f) * 0.5f));
+    });
+
+    auto t = new StateTransition(s, r, [=]() {
+        if (machine->elapsed >= machine->duration) {
+            machine->elapsed = 0;
+            return true;
+        }
+        return false;
+    });
+
+    auto t2 = new StateTransition(r, s, [=] {
+        if (machine->elapsed >= machine->duration) {
+            machine->elapsed = 0;
+            return true;
+        }
+        return false;
+    });
+
+    machine->AddState(s);
+    machine->AddState(r);
+    machine->AddTransition(t);
+    machine->AddTransition(t2);
 }
 
 
@@ -216,3 +731,56 @@ int main() {
 }
 
 
+PushdownState::PushdownResult ReadyScreenServer::OnUpdate(float dt, NCL::CSC8503::PushdownState **pushFunc) {
+    bool allReady = true;
+
+    if (g->playerReady.size() < 1) {
+        allReady = false;
+    }
+
+    for (const auto& ready : g->playerReady) {
+        allReady = allReady && ready.second;
+    }
+
+    if (allReady) {
+        for (auto& sender : g->playerSenders) {
+            MessagePacket p;
+            p.messageID = Game_Started;
+            g->server->SendPacket(sender.second->RequireAcknowledgement(p), sender.first);
+        }
+        *pushFunc = new PlayServer(g);
+        return PushdownState::Push;
+    }
+
+    return PushdownState::NoChange;
+}
+
+ReadyScreenServer::ReadyScreenServer(ServerGame *g) {
+    this->g = g;
+    isReady = false;
+}
+
+
+void ReadyScreenServer::OnAwake() {
+
+}
+
+void ReadyScreenServer::OnSleep() {
+
+}
+
+PlayServer::PlayServer(ServerGame *g) {
+    this->g = g;
+}
+
+PushdownState::PushdownResult PlayServer::OnUpdate(float dt, NCL::CSC8503::PushdownState **pushFunc) {
+    return PushdownState::NoChange;
+}
+
+void PlayServer::OnAwake() {
+
+}
+
+void PlayServer::OnSleep() {
+
+}

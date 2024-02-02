@@ -4,7 +4,7 @@
 
 namespace NCL {
 	using namespace NCL::Maths;
-	class AABBVolume : CollisionVolume
+	class  AABBVolume : CollisionVolume
 	{
 	public:
 		AABBVolume(const Vector3& halfDims) {
@@ -19,7 +19,9 @@ namespace NCL {
 			return halfSizes;
 		}
 
+        Vector3 halfSizes;
+
 	protected:
-		Vector3 halfSizes;
+
 	};
 }

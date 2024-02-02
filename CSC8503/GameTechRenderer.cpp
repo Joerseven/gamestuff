@@ -4,6 +4,7 @@
 #include "Camera.h"
 #include "TextureLoader.h"
 #include "MshLoader.h"
+#include "Assets.h"
 using namespace NCL;
 using namespace Rendering;
 using namespace CSC8503;
@@ -15,6 +16,9 @@ using namespace CSC8503;
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tinyobjloader.h"
 
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
 Matrix4 biasMatrix = Matrix4::Translation(Vector3(0.5f, 0.5f, 0.5f)) * Matrix4::Scale(Vector3(0.5f, 0.5f, 0.5f));
 
 GameTechRenderer::GameTechRenderer(GameWorld& world) : OGLRenderer(*Window::GetWindow()), gameWorld(world)	{
@@ -22,6 +26,8 @@ GameTechRenderer::GameTechRenderer(GameWorld& world) : OGLRenderer(*Window::GetW
 
 	debugShader  = new OGLShader("debug.vert", "debug.frag");
 	shadowShader = new OGLShader("shadow.vert", "shadow.frag");
+    sceneShader = new OGLShader("scene.vert", "scene.frag");
+    textShader = new OGLShader("text.vert", "text.frag");
 
 	glGenTextures(1, &shadowTex);
 	glBindTexture(GL_TEXTURE_2D, shadowTex);
@@ -48,6 +54,9 @@ GameTechRenderer::GameTechRenderer(GameWorld& world) : OGLRenderer(*Window::GetW
 	lightRadius = 1000.0f;
 	lightPosition = Vector3(-200.0f, 60.0f, -200.0f);
 
+    cubeMesh = LoadMesh("Cube.msh");
+    sphereMesh = LoadMesh("Sphere.msh");
+
 	//Skybox!
 	skyboxShader = new OGLShader("skybox.vert", "skybox.frag");
 	skyboxMesh = new OGLMesh();
@@ -64,6 +73,8 @@ GameTechRenderer::GameTechRenderer(GameWorld& world) : OGLRenderer(*Window::GetW
 	glGenBuffers(1, &textVertVBO);
 	glGenBuffers(1, &textColourVBO);
 	glGenBuffers(1, &textTexVBO);
+
+    LoadFont();
 
 	Debug::CreateDebugFont("PressStart2P.fnt", *LoadTexture("PressStart2P.png"));
 
@@ -130,6 +141,11 @@ void GameTechRenderer::RenderFrame() {
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	NewRenderLines();
 	NewRenderText();
+    for (const auto& s : stringsToRender) {
+        RenderText(s.text, s.x, s.y, s.scale, s.color);
+    }
+    stringsToRender.clear();
+    RenderDebugVolumes();
 	glDisable(GL_BLEND);
 	glEnable(GL_DEPTH_TEST);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -300,6 +316,79 @@ void GameTechRenderer::RenderCamera() {
 			DrawBoundMesh((uint32_t)i);
 		}
 	}
+
+    BindShader(*sceneShader);
+
+    projLocation	= glGetUniformLocation(sceneShader->GetProgramID(), "projMatrix");
+    viewLocation	= glGetUniformLocation(sceneShader->GetProgramID(), "viewMatrix");
+    modelLocation	= glGetUniformLocation(sceneShader->GetProgramID(), "modelMatrix");
+    shadowLocation  = glGetUniformLocation(sceneShader->GetProgramID(), "shadowMatrix");
+    colourLocation  = glGetUniformLocation(sceneShader->GetProgramID(), "objectColour");
+    hasVColLocation = glGetUniformLocation(sceneShader->GetProgramID(), "hasVertexColours");
+    hasTexLocation  = glGetUniformLocation(sceneShader->GetProgramID(), "hasTexture");
+
+    lightPosLocation	= glGetUniformLocation(sceneShader->GetProgramID(), "lightPos");
+    lightColourLocation = glGetUniformLocation(sceneShader->GetProgramID(), "lightColour");
+    lightRadiusLocation = glGetUniformLocation(sceneShader->GetProgramID(), "lightRadius");
+
+    cameraLocation = glGetUniformLocation(sceneShader->GetProgramID(), "cameraPos");
+
+    glUniformMatrix4fv(projLocation, 1, false, (float*)&projMatrix);
+    glUniformMatrix4fv(viewLocation, 1, false, (float*)&viewMatrix);
+
+    glUniform3fv(lightPosLocation	, 1, (float*)&lightPosition);
+    glUniform4fv(lightColourLocation, 1, (float*)&lightColour);
+    glUniform1f(lightRadiusLocation , lightRadius);
+
+    int shadowTexLocation = glGetUniformLocation(sceneShader->GetProgramID(), "shadowTex");
+    glUniform1i(shadowTexLocation, 1);
+
+    activeShader = sceneShader;
+
+    for (const auto& b : Debug::GetDebugVolumes()) {
+        auto prevScale = b.location->GetScale();
+        Vector3 newScale;
+        if (b.volume->type == VolumeType::OBB) {
+            newScale = ((OBBVolume*)b.volume)->GetHalfDimensions() * 2;
+        }
+        else if (b.volume->type == VolumeType::AABB) {
+            newScale = ((AABBVolume*)b.volume)->GetHalfDimensions() * 2;
+        } else {
+            auto sf = ((SphereVolume*)b.volume)->GetRadius();
+            newScale = Vector3(sf, sf, sf);
+        }
+        auto modelMatrix = b.location->SetScale(newScale).GetMatrix();
+        b.location->SetScale(prevScale);
+        glUniformMatrix4fv(modelLocation, 1, false, (float*)&modelMatrix);
+
+        Matrix4 fullShadowMat = shadowMatrix * modelMatrix;
+        glUniformMatrix4fv(shadowLocation, 1, false, (float*)&fullShadowMat);
+
+        Vector4 colour = b.color;
+        glUniform4fv(colourLocation, 1, &colour.x);
+
+        glUniform1i(hasTexLocation, 0);
+
+        size_t layerCount;
+
+        if (b.volume->type == VolumeType::OBB) {
+            BindMesh((OGLMesh&)*cubeMesh);
+            layerCount = cubeMesh->GetSubMeshCount();
+        }
+        else if (b.volume->type == VolumeType::AABB) {
+            BindMesh((OGLMesh&)*cubeMesh);
+            layerCount = cubeMesh->GetSubMeshCount();
+        } else {
+            BindMesh((OGLMesh&)*sphereMesh);
+            layerCount = sphereMesh->GetSubMeshCount();
+        }
+
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        for (size_t i = 0; i < layerCount; ++i) {
+            DrawBoundMesh((uint32_t)i);
+        }
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
 }
 
 Mesh* GameTechRenderer::LoadMesh(const std::string& name) {
@@ -310,7 +399,7 @@ Mesh* GameTechRenderer::LoadMesh(const std::string& name) {
 	return mesh;
 }
 
-Mesh *GameTechRenderer::LoadOBJMesh(const std::string &name) {
+Mesh *GameTechRenderer::LoadOBJMesh(const std::string &name, Vector3 localOffset) {
 
     auto mesh = new OGLMesh();
     tinyobj::attrib_t attrib;
@@ -319,7 +408,7 @@ Mesh *GameTechRenderer::LoadOBJMesh(const std::string &name) {
 
     std::string err;
 
-    bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, name.c_str(), MODELPATH);
+    bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, std::string(Assets::MESHDIR + name).c_str(), Assets::MESHDIR.c_str());
 
     if (!err.empty()) {
         std::cerr << err << std::endl;
@@ -329,8 +418,13 @@ Mesh *GameTechRenderer::LoadOBJMesh(const std::string &name) {
         std::cerr << "Unable to load mesh file: " << name << std::endl;
     }
 
-    const std::vector<tinyobj::index_t>& indices = shapes[0].mesh.indices;
-    const std::vector<int>& material_ids = shapes[0].mesh.material_ids;
+    std::vector<tinyobj::index_t> indices;
+    std::vector<int> material_ids;
+
+    for (auto i = 0; i < shapes.size(); i++) {
+        indices.insert(indices.end(), shapes[i].mesh.indices.begin(), shapes[i].mesh.indices.end());
+        material_ids.insert(material_ids.end(), shapes[i].mesh.material_ids.begin(), shapes[i].mesh.material_ids.end());
+    }
 
     auto vertices = std::vector<Vector3>();
     auto normals = std::vector<Vector3>();
@@ -346,13 +440,14 @@ Mesh *GameTechRenderer::LoadOBJMesh(const std::string &name) {
         Vector3 original[] = {
                 Vector3(attrib.vertices[indices[3 * index].vertex_index * 3],
                         attrib.vertices[indices[3 * index].vertex_index * 3 + 1],
-                        attrib.vertices[indices[3 * index].vertex_index * 3 + 2]),
-                Vector3(attrib.vertices[indices[3 * index + 1].vertex_index * 3],
-                        attrib.vertices[indices[3 * index + 1].vertex_index * 3 + 1],
-                        attrib.vertices[indices[3 * index + 1].vertex_index * 3 + 2]),
+                        attrib.vertices[indices[3 * index].vertex_index * 3 + 2] * -1) + localOffset,
                 Vector3(attrib.vertices[indices[3 * index + 2].vertex_index * 3],
                         attrib.vertices[indices[3 * index + 2].vertex_index * 3 + 1],
-                        attrib.vertices[indices[3 * index + 2].vertex_index * 3 + 2])
+                        attrib.vertices[indices[3 * index + 2].vertex_index * 3 + 2] * -1) + localOffset,
+                Vector3(attrib.vertices[indices[3 * index + 1].vertex_index * 3],
+                        attrib.vertices[indices[3 * index + 1].vertex_index * 3 + 1],
+                        attrib.vertices[indices[3 * index + 1].vertex_index * 3 + 2] * -1) + localOffset
+
         };
 
         vertices.push_back(original[0]);
@@ -426,6 +521,10 @@ void GameTechRenderer::NewRenderLines() {
 	glBindVertexArray(lineVAO);
 	glDrawArrays(GL_LINES, 0, (GLsizei)frameLineCount);
 	glBindVertexArray(0);
+}
+
+void GameTechRenderer::RenderDebugVolumes() {
+
 }
 
 void GameTechRenderer::NewRenderText() {
@@ -555,3 +654,137 @@ void GameTechRenderer::SetDebugLineBufferSizes(size_t newVertCount) {
 		glBindVertexArray(0);
 	}
 }
+
+void GameTechRenderer::LoadFont() {
+
+    FT_Library ft;
+    if (FT_Init_FreeType(&ft))
+    {
+        std::cout << "ERROR::FREETYPE: Could not init FreeType Library" << std::endl;
+        return;
+    }
+
+    std::string filePath = std::string(Assets::FONTSSDIR) + std::string("CascadiaMono.ttf");
+
+    FT_Face face;
+    if (FT_New_Face(ft, filePath.c_str(), 0, &face))
+    {
+        std::cout << "ERROR::FREETYPE: Failed to load font" << std::endl;
+        return;
+    }
+
+    FT_Set_Pixel_Sizes(face, 0, 48);
+
+
+    if (FT_Load_Char(face, 'X', FT_LOAD_RENDER))
+    {
+        std::cout << "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
+        return;
+    }
+
+
+
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // disable byte-alignment restriction
+
+    for (unsigned char c = 0; c < 128; c++)
+    {
+        // load character glyph
+        if (FT_Load_Char(face, c, FT_LOAD_RENDER))
+        {
+            std::cout << "ERROR::FREETYTPE: Failed to load Glyph" << std::endl;
+            continue;
+        }
+        // generate texture
+        unsigned int texture;
+        glGenTextures(1, &texture);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glTexImage2D(
+                GL_TEXTURE_2D,
+                0,
+                GL_RED,
+                face->glyph->bitmap.width,
+                face->glyph->bitmap.rows,
+                0,
+                GL_RED,
+                GL_UNSIGNED_BYTE,
+                face->glyph->bitmap.buffer
+        );
+        // set texture options
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        // now store character for later use
+        Character character = {
+                texture,
+                Vector2i(face->glyph->bitmap.width, face->glyph->bitmap.rows),
+                Vector2i(face->glyph->bitmap_left, face->glyph->bitmap_top),
+                (unsigned int)face->glyph->advance.x
+        };
+        Characters.insert(std::pair<char, Character>(c, character));
+
+        glGenVertexArrays(1, &betterTextVAO);
+        glGenBuffers(1, &betterTextVBO);
+        glBindVertexArray(betterTextVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, betterTextVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 6 * 4, nullptr, GL_DYNAMIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), 0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+    }
+
+}
+
+void GameTechRenderer::RenderText(std::string text, float x, float y, float scale, Vector3 color) {
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    Matrix4 proj = Matrix4::Orthographic(0.0, 1920, 0, 1080, -1.0f, 1.0f);
+    BindShader(*textShader);
+    glUniform3f(glGetUniformLocation(textShader->GetProgramID(), "textColor"), color.x, color.y, color.z);
+    glUniformMatrix4fv(glGetUniformLocation(textShader->GetProgramID(), "projection"), 1, false, (float*)proj.array);
+    glActiveTexture(GL_TEXTURE0);
+    glBindVertexArray(betterTextVAO);
+
+    // iterate through all characters
+    std::string::const_iterator c;
+    for (c = text.begin(); c != text.end(); c++) {
+        Character ch = Characters[*c];
+
+        float xpos = x + (float)ch.Bearing.x * scale;
+        float ypos = y - (float)(ch.Size.y - ch.Bearing.y) * scale;
+
+        float w = (float)ch.Size.x * scale;
+        float h = (float)ch.Size.y * scale;
+        // update VBO for each character
+        float vertices[6][4] = {
+                { xpos,     ypos + h,   0.0f, 0.0f },
+                { xpos,     ypos,       0.0f, 1.0f },
+                { xpos + w, ypos,       1.0f, 1.0f },
+
+                { xpos,     ypos + h,   0.0f, 0.0f },
+                { xpos + w, ypos,       1.0f, 1.0f },
+                { xpos + w, ypos + h,   1.0f, 0.0f }
+        };
+        // render glyph texture over quad
+        glBindTexture(GL_TEXTURE_2D, ch.TextureID);
+        // update content of VBO memory
+        glBindBuffer(GL_ARRAY_BUFFER, betterTextVBO);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        // render quad
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        // now advance cursors for next glyph (note that advance is number of 1/64 pixels)
+        x += (float)(ch.Advance >> 6) * scale; // bitshift by 6 to get value in pixels (2^6 = 64)
+    }
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void GameTechRenderer::AddRenderText(std::string s, float x, float y, float scale, Vector3 color) {
+    RenderStrings r = { s, x, y, scale, color };
+    stringsToRender.push_back(r);
+}
+
+

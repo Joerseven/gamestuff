@@ -16,10 +16,10 @@ using namespace CSC8503;
 
 PhysicsSystem::PhysicsSystem(GameWorld& g) : gameWorld(g)	{
 	applyGravity	= false;
-	useBroadPhase	= false;	
+	useBroadPhase	= false;
 	dTOffset		= 0.0f;
 	globalDamping	= 0.995f;
-	SetGravity(Vector3(0.0f, -9.8f, 0.0f));
+	SetGravity(Vector3(0.0f, -15.0f, 0.0f));
 }
 
 PhysicsSystem::~PhysicsSystem()	{
@@ -54,7 +54,7 @@ bool useSimpleContainer = false;
 int constraintIterationCount = 10;
 
 //This is the fixed timestep we'd LIKE to have
-const int   idealHZ = 120;
+const int   idealHZ = 60;
 const float idealDT = 1.0f / idealHZ;
 
 /*
@@ -78,13 +78,7 @@ void PhysicsSystem::Update(float dt) {
 	int iteratorCount = 0;
 	while(dTOffset > realDT) {
 		IntegrateAccel(realDT); //Update accelerations from external forces
-		if (useBroadPhase) {
-			BroadPhase();
-			NarrowPhase();
-		}
-		else {
-			BasicCollisionDetection();
-		}
+
 
 		//This is our simple iterative solver - 
 		//we just run things multiple times, slowly moving things forward
@@ -95,11 +89,22 @@ void PhysicsSystem::Update(float dt) {
 		}
 		IntegrateVelocity(realDT); //update positions from new velocity changes
 
+        if (useBroadPhase) {
+            BroadPhase();
+            NarrowPhase();
+        }
+        else {
+            BasicCollisionDetection();
+        }
+
 		dTOffset -= realDT;
 		iteratorCount++;
-	}
+        ClearForces();
+    }
 
-	ClearForces();	//Once we've finished with the forces, reset them to zero
+	//Once we've finished with the forces, reset them to zero
+
+
 
 	UpdateCollisionList(); //Remove any old collisions
 
@@ -139,8 +144,15 @@ OnCollisionBegin / OnCollisionEnd functions (removing health when hit by a
 rocket launcher, gaining a point when the player hits the gold coin, and so on).
 */
 void PhysicsSystem::UpdateCollisionList() {
-	for (std::set<CollisionDetection::CollisionInfo>::iterator i = allCollisions.begin(); i != allCollisions.end(); ) {
-		if ((*i).framesLeft == numCollisionFrames) {
+	for (auto i = allCollisions.begin(); i != allCollisions.end(); ) {
+
+
+        if (!i->a->IsActive() || !i->b->IsActive()) {
+            allCollisions.erase(i);
+            return;
+        }
+
+        if ((*i).framesLeft == numCollisionFrames) {
 			i->a->OnCollisionBegin(i->b);
 			i->b->OnCollisionBegin(i->a);
 		}
@@ -182,18 +194,30 @@ void PhysicsSystem::BasicCollisionDetection() {
     gameWorld.GetObjectIterators(first, last);
 
     for (auto i = first; i != last; i++) {
-        if ((*i)->GetPhysicsObject() == nullptr) {
+        if ((*i)->GetPhysicsObject() == nullptr || !(*i)->IsActive()) {
             continue;
         }
 
         for (auto j = i+1; j != last; j++) {
-            if ((*j)->GetPhysicsObject() == nullptr) {
+            if ((*j)->GetPhysicsObject() == nullptr || !(*j)->IsActive()) {
                 continue;
             }
+
+            if ((*i)->GetPhysicsObject()->GetInverseMass() + (*j)->GetPhysicsObject()->GetInverseMass() == 0) {
+                if ((*i)->GetPhysicsObject()->isTrigger && (*j)->GetPhysicsObject()->isTrigger) {
+                    CollisionDetection::CollisionInfo info;
+                    if (CollisionDetection::ObjectIntersection(*i, *j, info)) {
+                        info.framesLeft = numCollisionFrames;
+                        allCollisions.insert(info);
+                    }
+                }
+                continue;
+            }
+
             CollisionDetection::CollisionInfo info;
             if (CollisionDetection::ObjectIntersection(*i, *j, info)) {
                 ImpulseResolveCollision(*info.a, *info.b, info.point);
-                std::cout << "Collision between " << (*i)->GetName() << " and " << (*j)->GetName() << std::endl;
+                //std::cout << "Collision between " << (*i)->GetName() << " and " << (*j)->GetName() << std::endl;
                 info.framesLeft = numCollisionFrames;
                 allCollisions.insert(info);
             }
@@ -221,6 +245,10 @@ void PhysicsSystem::ImpulseResolveCollision(GameObject& a, GameObject& b, Collis
         return;
     }
 
+    if (physA->isTrigger || physB->isTrigger) {
+        return;
+    }
+
     transformA.SetPosition(transformA.GetPosition() - (p.normal * p.penetration*(physA->GetInverseMass() / totalMass)));
     transformB.SetPosition(transformB.GetPosition() + (p.normal * p.penetration*(physB->GetInverseMass() / totalMass)));
 
@@ -243,7 +271,11 @@ void PhysicsSystem::ImpulseResolveCollision(GameObject& a, GameObject& b, Collis
 
     float angularEffect = Vector3::Dot(inertiaA + inertiaB, p.normal);
 
-    float cRestitution = 0.66f;
+    float cRestitution = 0.66f* physA->restitutionModifier * physB->restitutionModifier;
+
+    if (contactVelocity.Length() < 4.0f) {
+        cRestitution = 0.0f;
+    }
 
     float j = ( -(1.0f + cRestitution) * impulseForce) / (totalMass + angularEffect);
 
@@ -266,7 +298,7 @@ compare the collisions that we absolutely need to.
 */
 void PhysicsSystem::BroadPhase() {
     broadphaseCollisions.clear();
-    QuadTree tree(Vector2(1024, 1024), 7, 6);
+    QuadTree tree(Vector2(1024, 1024), 15, 15);
 
     std::vector<GameObject*>::const_iterator first;
     std::vector<GameObject*>::const_iterator last;
@@ -325,6 +357,10 @@ void PhysicsSystem::IntegrateAccel(float dt) {
     gameWorld.GetObjectIterators(first, last);
 
     for (auto i = first; i != last; i++) {
+        if (!((*i)->IsActive())) {
+            continue;
+        }
+
         PhysicsObject* object = (*i)->GetPhysicsObject();
 
         if (object == nullptr) {
@@ -368,6 +404,11 @@ void PhysicsSystem::IntegrateVelocity(float dt) {
     float frameLinearDamping = 1.0f - (0.4f * dt);
 
     for (auto i = first; i != last; i++) {
+
+        if (!(*i)->IsActive()) {
+            continue;
+        }
+
         PhysicsObject* object = (*i)->GetPhysicsObject();
         if (object == nullptr) {
             continue;
@@ -421,11 +462,11 @@ us to model springs and ropes etc.
 
 */
 void PhysicsSystem::UpdateConstraints(float dt) {
-	std::vector<Constraint*>::const_iterator first;
-	std::vector<Constraint*>::const_iterator last;
-	gameWorld.GetConstraintIterators(first, last);
+    std::vector<Constraint *>::const_iterator first;
+    std::vector<Constraint *>::const_iterator last;
+    gameWorld.GetConstraintIterators(first, last);
 
-	for (auto i = first; i != last; ++i) {
-		(*i)->UpdateConstraint(dt);
-	}
+    for (auto i = first; i != last; ++i) {
+        (*i)->UpdateConstraint(dt);
+    }
 }

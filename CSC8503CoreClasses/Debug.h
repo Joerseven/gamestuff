@@ -3,10 +3,13 @@
 #include "Vector4.h"
 #include "Matrix4.h"
 #include "SimpleFont.h"
+#include "Transform.h"
+#include "CollisionVolume.h"
 
 namespace NCL {
 	using namespace NCL::Maths;
 	using namespace NCL::Rendering;
+    using namespace CSC8503;
 	class Debug
 	{
 	public:
@@ -25,8 +28,16 @@ namespace NCL {
 			Vector4 colourB;
 		};
 
+        struct DebugBoundingEntry {
+            Transform* location;
+            CollisionVolume* volume;
+            Vector4 color;
+            float time;
+        };
+
 		static void Print(const std::string& text, const Vector2& pos, const Vector4& colour = Vector4(1, 1, 1, 1));
 		static void DrawLine(const Vector3& startpoint, const Vector3& endpoint, const Vector4& colour = Vector4(1, 1, 1, 1), float time = 0.0f);
+        static void DrawBoundingVolume(Transform* location, CollisionVolume* volume, const Vector4& color, float time = 99999999999.0f);
 
 		static void DrawAxisLines(const Matrix4& modelMatrix, float scaleBoost = 1.0f, float time = 0.0f);
 
@@ -38,6 +49,7 @@ namespace NCL {
 
 		static const std::vector<DebugStringEntry>& GetDebugStrings();
 		static const std::vector<DebugLineEntry>& GetDebugLines();
+        static const std::vector<DebugBoundingEntry>& GetDebugVolumes();
 
 
 		static const Vector4 RED;
@@ -51,12 +63,15 @@ namespace NCL {
 		static const Vector4 MAGENTA;
 		static const Vector4 CYAN;
 
+        static std::vector<DebugBoundingEntry>  boundingEntries;
+
 	protected:
 		Debug() {}
 		~Debug() {}
 
 		static std::vector<DebugStringEntry>	stringEntries;
 		static std::vector<DebugLineEntry>		lineEntries;
+
 
 		static SimpleFont* debugFont;
 		static Texture* fontTexture;

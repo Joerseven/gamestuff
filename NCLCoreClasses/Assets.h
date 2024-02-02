@@ -19,4 +19,5 @@ namespace NCL::Assets {
 
 	extern bool ReadTextFile(const std::string& filepath, std::string& result);
 	extern bool ReadBinaryFile(const std::string& filepath, char** into, size_t& size);
+
 }

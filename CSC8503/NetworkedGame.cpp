@@ -6,15 +6,6 @@
 
 #define COLLISION_MSG 30
 
-struct MessagePacket : public GamePacket {
-	short playerID;
-	short messageID;
-
-	MessagePacket() {
-		type = Message;
-		size = sizeof(short) * 2;
-	}
-};
 
 NetworkedGame::NetworkedGame()	{
 	thisServer = nullptr;
@@ -32,7 +23,7 @@ NetworkedGame::~NetworkedGame()	{
 
 void NetworkedGame::StartAsServer() {
 
-	thisServer = new GameServer(NetworkBase::GetDefaultPort(), 4);
+	//thisServer = new GameServer(NetworkBase::GetDefaultPort(), 4);
 
 	thisServer->RegisterPacketHandler(Received_State, this);
 
@@ -97,15 +88,15 @@ void NetworkedGame::UpdateAsServer(float dt) {
 }
 
 void NetworkedGame::UpdateAsClient(float dt) {
-	ClientPacket newPacket;
+    ClientPacket newPacket;
 
     for (size_t s = 0; s < 8; s++) {
         newPacket.buttonstates[s] = 0;
     }
 
-	if (Window::GetKeyboard()->KeyDown(KeyCodes::UP)) {
-		newPacket.buttonstates[0] = 1;
-	}
+    if (Window::GetKeyboard()->KeyDown(KeyCodes::UP)) {
+        newPacket.buttonstates[0] = 1;
+    }
 
     if (Window::GetKeyboard()->KeyDown(KeyCodes::LEFT)) {
         newPacket.buttonstates[1] = 1;
@@ -119,7 +110,7 @@ void NetworkedGame::UpdateAsClient(float dt) {
         newPacket.buttonstates[3] = 1;
     }
 
-	thisClient->SendPacket(newPacket);
+    thisClient->SendPacket(newPacket);
 }
 
 void NetworkedGame::BroadcastSnapshot(bool deltaFrame) {

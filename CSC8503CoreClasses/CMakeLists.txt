@@ -82,6 +82,8 @@ set(Physics
     "PhysicsObject.h"
     "PhysicsSystem.cpp"
     "PhysicsSystem.h"
+	"TweenManager.cpp"
+	"TweenManager.h"
 )
 source_group("Physics" FILES ${Physics})
 
@@ -138,6 +140,8 @@ set(ALL_FILES
     ${enet_Files}
 	Level.cpp
 	Level.h
+	Observer.cpp
+	Observer.h
 )
 
 set_source_files_properties(${ALL_FILES} PROPERTIES LANGUAGE CXX)

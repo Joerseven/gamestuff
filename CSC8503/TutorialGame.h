@@ -94,7 +94,9 @@ namespace NCL {
 			}
 
 			GameObject* objClosest = nullptr;
-		};
+
+            GameObject *AddCapsuleToWorld(const Vector3 &position);
+        };
 	}
 }
 

@@ -14,6 +14,8 @@ GameObject::GameObject(const std::string& objectName)	{
 	physicsObject	= nullptr;
 	renderObject	= nullptr;
 	networkObject	= nullptr;
+    collisionListener = nullptr;
+    stateMachine = nullptr;
 }
 
 GameObject::~GameObject()	{
@@ -21,6 +23,7 @@ GameObject::~GameObject()	{
 	delete physicsObject;
 	delete renderObject;
 	delete networkObject;
+    delete collisionListener;
 }
 
 bool GameObject::GetBroadphaseAABB(Vector3&outSize) const {
